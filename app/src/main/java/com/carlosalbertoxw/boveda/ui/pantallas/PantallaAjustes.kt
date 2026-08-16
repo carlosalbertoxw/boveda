@@ -30,7 +30,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,22 +38,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.carlosalbertoxw.boveda.datos.Respaldo
-import com.carlosalbertoxw.boveda.seguridad.AlmacenBiometrico
-import com.carlosalbertoxw.boveda.seguridad.Biometria
 import com.carlosalbertoxw.boveda.ui.ModeloBoveda
+import com.carlosalbertoxw.boveda.ui.ModeloRespaldo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaAjustes(modelo: ModeloBoveda, alVolver: () -> Unit) {
-    val contexto = LocalContext.current
-    val actividad = contexto as? FragmentActivity
-    val prefs = modelo.gestor.prefs
+fun PantallaAjustes(
+    modelo: ModeloBoveda,
+    alVolver: () -> Unit,
+    respaldo: ModeloRespaldo = viewModel()
+) {
+    val actividad = LocalContext.current as? FragmentActivity
 
-    var autobloqueo by remember { mutableIntStateOf(prefs.minutosAutobloqueo) }
-    var portapapeles by remember { mutableIntStateOf(prefs.segundosPortapapeles) }
-    var borrarTras by remember { mutableIntStateOf(prefs.borrarTrasFallos) }
-    var huella by remember { mutableStateOf(prefs.biometricoActivo) }
+    val autobloqueo by modelo.minutosAutobloqueo.collectAsStateWithLifecycle()
+    val portapapeles by modelo.segundosPortapapeles.collectAsStateWithLifecycle()
+    val borrarTras by modelo.borrarTrasFallos.collectAsStateWithLifecycle()
+    val huella by modelo.huellaActiva.collectAsStateWithLifecycle()
 
     var cambiandoMaestra by remember { mutableStateOf(false) }
     var confirmandoBorrado by remember { mutableStateOf(false) }
@@ -72,33 +74,6 @@ fun PantallaAjustes(modelo: ModeloBoveda, alVolver: () -> Unit) {
     val abreLector = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> origenImportar = uri }
-
-    fun activaHuella() {
-        val act = actividad ?: return
-        if (!Biometria.disponible(contexto)) {
-            modelo.avisa("Este equipo no tiene biometria fuerte registrada.")
-            return
-        }
-        val cifrador = runCatching { AlmacenBiometrico.cifradorParaGuardar(contexto) }.getOrNull()
-        if (cifrador == null) {
-            modelo.avisa("No se pudo preparar la llave del equipo.")
-            return
-        }
-        Biometria.pide(
-            actividad = act,
-            cifrador = cifrador,
-            titulo = "Activar desbloqueo con huella",
-            subtitulo = "Confirma para guardar la llave",
-            alExito = {
-                modelo.activaBiometrico(it)
-                huella = prefs.biometricoActivo
-            },
-            alFallo = {
-                modelo.avisa(it)
-                huella = prefs.biometricoActivo
-            }
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -124,7 +99,7 @@ fun PantallaAjustes(modelo: ModeloBoveda, alVolver: () -> Unit) {
                 Opciones(
                     opciones = listOf(0 to "Al instante", 1 to "1 min", 5 to "5 min", 15 to "15 min"),
                     elegida = autobloqueo,
-                    alElegir = { autobloqueo = it; prefs.minutosAutobloqueo = it }
+                    alElegir = modelo::cambiaAutobloqueo
                 )
             }
 
@@ -136,7 +111,7 @@ fun PantallaAjustes(modelo: ModeloBoveda, alVolver: () -> Unit) {
                 Opciones(
                     opciones = listOf(0 to "No borrar", 15 to "15 s", 30 to "30 s", 60 to "60 s"),
                     elegida = portapapeles,
-                    alElegir = { portapapeles = it; prefs.segundosPortapapeles = it }
+                    alElegir = modelo::cambiaSegundosPortapapeles
                 )
             }
 
@@ -146,11 +121,9 @@ fun PantallaAjustes(modelo: ModeloBoveda, alVolver: () -> Unit) {
                     "telefono y se destruye sola si se registra una huella nueva."
             ) {
                 Interruptor("Activado", huella) { activar ->
-                    if (activar) {
-                        activaHuella()
-                    } else {
-                        modelo.apagaBiometrico()
-                        huella = false
+                    when {
+                        !activar -> modelo.apagaHuella()
+                        actividad != null -> modelo.activaHuella(actividad)
                     }
                 }
             }
@@ -164,7 +137,7 @@ fun PantallaAjustes(modelo: ModeloBoveda, alVolver: () -> Unit) {
                 Opciones(
                     opciones = listOf(0 to "Nunca", 10 to "10", 20 to "20"),
                     elegida = borrarTras,
-                    alElegir = { borrarTras = it; prefs.borrarTrasFallos = it }
+                    alElegir = modelo::cambiaBorrarTrasFallos
                 )
             }
 
@@ -184,7 +157,7 @@ fun PantallaAjustes(modelo: ModeloBoveda, alVolver: () -> Unit) {
                             // El candado tiene que saber que la salida al
                             // selector de archivos es esperada, o cerraria la
                             // boveda a media exportacion.
-                            modelo.permiteSalidaBreve()
+                            respaldo.permiteSalidaBreve()
                             abreCreador.launch(Respaldo.nombreSugerido())
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -192,7 +165,7 @@ fun PantallaAjustes(modelo: ModeloBoveda, alVolver: () -> Unit) {
 
                     OutlinedButton(
                         onClick = {
-                            modelo.permiteSalidaBreve()
+                            respaldo.permiteSalidaBreve()
                             // "*/*" y no application/json: segun de donde venga
                             // el archivo, el proveedor puede anunciarlo con otro
                             // tipo y saldria en gris, imposible de elegir.
@@ -250,7 +223,7 @@ fun PantallaAjustes(modelo: ModeloBoveda, alVolver: () -> Unit) {
     destinoExportar?.let { destino ->
         DialogoExportar(
             alConfirmar = { maestra, clave ->
-                modelo.exporta(destino, maestra, clave)
+                respaldo.exporta(destino, maestra, clave)
                 destinoExportar = null
             },
             alCerrar = { destinoExportar = null }
@@ -260,7 +233,7 @@ fun PantallaAjustes(modelo: ModeloBoveda, alVolver: () -> Unit) {
     origenImportar?.let { origen ->
         DialogoImportar(
             alConfirmar = { clave, reemplazar ->
-                modelo.importa(origen, clave, reemplazar)
+                respaldo.importa(origen, clave, reemplazar)
                 origenImportar = null
             },
             alCerrar = { origenImportar = null }

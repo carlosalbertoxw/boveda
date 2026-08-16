@@ -78,7 +78,12 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
 
         val bytes = try {
             app.contentResolver.openInputStream(origen)?.use { flujo ->
-                val leido = flujo.readBytes()
+                // Se lee un byte de mas que el limite y se corta ahi. Antes se
+                // cargaba el archivo entero y solo despues se comparaba con el
+                // limite, asi que elegir por error un video en el selector
+                // tumbaba el proceso por falta de memoria justo antes de poder
+                // mostrar el mensaje que explica el problema.
+                val leido = flujo.readNBytes(limiteBytes + 1)
                 if (leido.size > limiteBytes) {
                     return@withContext Importacion.Falla("El archivo es demasiado grande.")
                 }

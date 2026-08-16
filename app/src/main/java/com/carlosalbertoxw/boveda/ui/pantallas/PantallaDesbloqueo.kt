@@ -19,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,9 +29,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.delay
-import com.carlosalbertoxw.boveda.seguridad.AlmacenBiometrico
-import com.carlosalbertoxw.boveda.seguridad.Biometria
 import com.carlosalbertoxw.boveda.ui.ModeloBoveda
 
 @Composable
@@ -42,45 +38,20 @@ fun PantallaDesbloqueo(modelo: ModeloBoveda) {
     var contrasena by remember { mutableStateOf("") }
     val ocupado by modelo.ocupado.collectAsStateWithLifecycle()
 
-    var espera by remember { mutableIntStateOf(modelo.gestor.segundosDeEspera()) }
     // Cuenta atras del castigo por intentos fallidos, para que el boton no se
-    // vea muerto sin explicacion. Se relee en bucle en vez de descontar en
-    // memoria: la espera vive en preferencias y debe sobrevivir a que el
-    // usuario cierre y reabra la app para volver a intentar.
-    LaunchedEffect(Unit) {
-        while (true) {
-            espera = modelo.gestor.segundosDeEspera()
-            delay(500)
-        }
-    }
+    // vea muerto sin explicacion. El bucle que la mantiene al dia vive en el
+    // modelo y solo corre mientras esta pantalla lo observa.
+    val espera by modelo.esperaSegundos.collectAsStateWithLifecycle()
 
-    val conHuella = modelo.gestor.prefs.biometricoActivo && Biometria.disponible(contexto)
-
-    fun pideHuella() {
-        val act = actividad ?: return
-        val sobre = modelo.gestor.prefs.sobreBiometrico ?: return
-        val cifrador = AlmacenBiometrico.cifradorParaLeer(sobre)
-        if (cifrador == null) {
-            // La llave del Keystore ya no sirve: casi siempre porque se
-            // registro una huella nueva en el telefono, que la invalida a
-            // proposito. Queda la contrasena maestra.
-            modelo.gestor.prefs.apagaBiometrico()
-            modelo.avisa("El atajo de huella se invalido. Usa tu contrasena maestra.")
-            return
-        }
-        Biometria.pide(
-            actividad = act,
-            cifrador = cifrador,
-            titulo = "Abrir la boveda",
-            subtitulo = "Confirma tu identidad",
-            alExito = { modelo.abreConBiometrico(it) },
-            alFallo = { modelo.avisa(it) }
-        )
-    }
+    // Se resuelve una sola vez: preguntarlo abre el Keystore, y antes se hacia
+    // en cada recomposicion, es decir con cada tecla del campo de contrasena.
+    val conHuella = remember { modelo.puedeOfrecerHuella() }
 
     // Si el atajo esta activo, se ofrece de entrada: es el camino normal.
     LaunchedEffect(conHuella) {
-        if (conHuella && espera == 0) pideHuella()
+        if (conHuella && espera == 0 && actividad != null) {
+            modelo.desbloqueaConHuella(actividad)
+        }
     }
 
     Column(
@@ -125,10 +96,10 @@ fun PantallaDesbloqueo(modelo: ModeloBoveda) {
             )
         }
 
-        if (conHuella) {
+        if (conHuella && actividad != null) {
             Spacer(Modifier.height(12.dp))
             OutlinedButton(
-                onClick = { pideHuella() },
+                onClick = { modelo.desbloqueaConHuella(actividad) },
                 enabled = espera == 0 && !ocupado,
                 modifier = Modifier.fillMaxWidth()
             ) {

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 @Database(entities = [Credencial::class], version = 1, exportSchema = true)
@@ -13,6 +14,25 @@ abstract class BovedaDatabase : RoomDatabase() {
 
     companion object {
         const val NOMBRE = "boveda.db"
+
+        /**
+         * Politica de migracion: **siempre explicita, nunca destructiva.**
+         *
+         * En una app normal, `fallbackToDestructiveMigration` es una salida
+         * comoda: se pierde una cache y se vuelve a bajar. Aqui borraria la
+         * unica copia que existe de las contrasenas del usuario, que no estan
+         * en ningun servidor ni se pueden volver a pedir. Por eso no se usa, y
+         * por eso no debe usarse nunca aunque una build falle al abrir.
+         *
+         * Al cambiar el esquema hay que subir la version en @Database, escribir
+         * la Migration correspondiente y anadirla a esta lista. El esquema de
+         * cada version se exporta a app/schemas (ver ksp room.schemaLocation) y
+         * se versiona: es lo que permite escribir la migracion y probarla con
+         * MigrationTestHelper. Si se sube la version sin migracion, Room lanza
+         * IllegalStateException al abrir y el usuario ve "no se pudo abrir la
+         * boveda" con sus datos intactos pero inalcanzables.
+         */
+        private val MIGRACIONES: Array<Migration> = emptyArray()
 
         /**
          * A diferencia de una app normal, esta base NO se abre al arrancar: se
@@ -40,6 +60,7 @@ abstract class BovedaDatabase : RoomDatabase() {
                 NOMBRE
             )
                 .openHelperFactory(SupportOpenHelperFactory(frase))
+                .addMigrations(*MIGRACIONES)
                 .build()
         }
 

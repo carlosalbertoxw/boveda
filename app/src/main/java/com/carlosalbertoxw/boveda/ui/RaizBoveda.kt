@@ -11,8 +11,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.carlosalbertoxw.boveda.AplicacionBoveda
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -35,17 +37,18 @@ import com.carlosalbertoxw.boveda.ui.pantallas.PantallaListado
 @Composable
 fun RaizBoveda(modelo: ModeloBoveda = viewModel()) {
     val estado by modelo.estado.collectAsStateWithLifecycle()
-    val aviso by modelo.aviso.collectAsStateWithLifecycle()
-    val avisos = remember { SnackbarHostState() }
+    val buzon = AplicacionBoveda.de(LocalContext.current).avisos
+    val aviso by buzon.mensaje.collectAsStateWithLifecycle()
+    val barra = remember { SnackbarHostState() }
 
     LaunchedEffect(aviso) {
         aviso?.let {
-            avisos.showSnackbar(it)
-            modelo.limpiaAviso()
+            barra.showSnackbar(it)
+            buzon.limpia()
         }
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(avisos) }) { relleno ->
+    Scaffold(snackbarHost = { SnackbarHost(barra) }) { relleno ->
         Box(Modifier.fillMaxSize().padding(relleno)) {
             when (estado) {
                 is EstadoBoveda.SinConfigurar -> PantallaAlta(modelo)

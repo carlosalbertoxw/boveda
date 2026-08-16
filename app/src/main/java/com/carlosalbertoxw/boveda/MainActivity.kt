@@ -1,7 +1,6 @@
 package com.carlosalbertoxw.boveda
 
 import android.os.Bundle
-import android.os.SystemClock
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.compose.setContent
@@ -9,22 +8,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.carlosalbertoxw.boveda.ui.RaizBoveda
 import com.carlosalbertoxw.boveda.ui.tema.TemaBoveda
 
 class MainActivity : AppCompatActivity() {
-
-    /**
-     * Ultimo toque del usuario. Sirve para el bloqueo por inactividad con la app
-     * al frente: dejar la boveda abierta encima de la mesa es tan malo como
-     * dejarla abierta en segundo plano.
-     */
-    @Volatile
-    private var ultimoToque = SystemClock.elapsedRealtime()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // FLAG_SECURE antes de que exista contenido que capturar. Bloquea las
@@ -58,25 +52,20 @@ class MainActivity : AppCompatActivity() {
                     RaizBoveda()
                 }
             }
+        }
 
-            val aplicacion = AplicacionBoveda.de(this)
-            val gestor = aplicacion.gestor
-            LaunchedEffect(Unit) {
+        // El vigilante de la inactividad: cierra la boveda si la app se queda
+        // abierta encima de la mesa. Vive fuera de la composicion y atado al
+        // ciclo de vida, asi que solo despierta mientras la pantalla se ve;
+        // antes seguia corriendo tambien en segundo plano, donde el cierre ya
+        // lo decide AplicacionBoveda por el ciclo de vida del proceso.
+        val aplicacion = AplicacionBoveda.de(this)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (true) {
                     delay(15_000)
-                    if (!gestor.abierta) continue
-                    if (aplicacion.salidaPermitida) {
-                        // El selector de archivos esta al frente: no hay toques
-                        // que registrar, y eso no es haber dejado la app sola.
-                        ultimoToque = SystemClock.elapsedRealtime()
-                        continue
-                    }
-                    // Con "al instante" configurado, en primer plano se toma un
-                    // minuto: cerrar la boveda mientras la miras seria absurdo.
-                    val minutos = gestor.prefs.minutosAutobloqueo.coerceAtLeast(1)
-                    if (SystemClock.elapsedRealtime() - ultimoToque >= minutos * 60_000L) {
-                        gestor.bloquea()
-                    }
+                    if (!aplicacion.gestor.abierta) continue
+                    if (aplicacion.caducoPorInactividad()) aplicacion.gestor.bloquea()
                 }
             }
         }
@@ -84,6 +73,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onUserInteraction() {
         super.onUserInteraction()
-        ultimoToque = SystemClock.elapsedRealtime()
+        AplicacionBoveda.de(this).registraToque()
     }
 }

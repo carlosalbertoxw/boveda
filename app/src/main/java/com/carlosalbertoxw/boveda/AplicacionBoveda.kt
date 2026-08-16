@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import com.carlosalbertoxw.boveda.seguridad.GestorBoveda
 import com.carlosalbertoxw.boveda.seguridad.Portapapeles
+import com.carlosalbertoxw.boveda.ui.Avisos
 
 /**
  * Aqui vive el estado de la boveda, no en una Activity.
@@ -25,11 +26,42 @@ class AplicacionBoveda : Application() {
     lateinit var gestor: GestorBoveda
         private set
 
+    /** Buzon unico de mensajes: lo llenan los modelos, lo vacia la barra de avisos. */
+    val avisos = Avisos()
+
     /** Para tareas que deben sobrevivir a la pantalla, como borrar el portapapeles. */
     val alcance = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var salidaEn = 0L
     private var permisoSalidaHasta = 0L
+
+    /**
+     * Ultimo toque del usuario, para el cierre por inactividad con la app al
+     * frente. Vive aqui y no en la Activity porque la Activity se recrea al
+     * rotar el telefono o al cambiar el tema, y con el contador dentro cada
+     * rotacion regalaba un ciclo entero de inactividad.
+     */
+    @Volatile
+    var ultimoToque = SystemClock.elapsedRealtime()
+        private set
+
+    fun registraToque() {
+        ultimoToque = SystemClock.elapsedRealtime()
+    }
+
+    /** Si toca cerrar por llevar demasiado tiempo sin que nadie toque nada. */
+    fun caducoPorInactividad(): Boolean {
+        if (salidaPermitida) {
+            // El selector de archivos esta al frente: no hay toques que
+            // registrar, y eso no es haber dejado la app sola.
+            registraToque()
+            return false
+        }
+        // Con "al instante" configurado, en primer plano se toma un minuto:
+        // cerrar la boveda mientras la miras seria absurdo.
+        val minutos = gestor.prefs.minutosAutobloqueo.coerceAtLeast(1)
+        return SystemClock.elapsedRealtime() - ultimoToque >= minutos * 60_000L
+    }
 
     /**
      * Abrir el selector de archivos del sistema manda la app a segundo plano, y
