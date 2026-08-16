@@ -234,7 +234,7 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
     // --- Credenciales -----------------------------------------------------
 
     fun guarda(credencial: Credencial) = lanza {
-        val dao = (gestor.estado.value as? EstadoBoveda.Abierta)?.db?.credencialDao() ?: return@lanza
+        val dao = daoAbierto() ?: return@lanza
         if (credencial.id == 0L) {
             dao.inserta(credencial)
         } else {
@@ -243,7 +243,7 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
     }
 
     fun elimina(credencial: Credencial) = lanza {
-        val dao = (gestor.estado.value as? EstadoBoveda.Abierta)?.db?.credencialDao() ?: return@lanza
+        val dao = daoAbierto() ?: return@lanza
         dao.elimina(credencial)
     }
 
@@ -309,6 +309,10 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
     }
 
     // --- Plomeria ---------------------------------------------------------
+
+    /** El acceso a la base, o null si la boveda se cerro por el camino. */
+    private fun daoAbierto() =
+        (gestor.estado.value as? EstadoBoveda.Abierta)?.db?.credencialDao()
 
     /** Atajo para los textos: el modelo tambien habla, y habla en strings.xml. */
     private fun texto(id: Int, vararg formato: Any): String =

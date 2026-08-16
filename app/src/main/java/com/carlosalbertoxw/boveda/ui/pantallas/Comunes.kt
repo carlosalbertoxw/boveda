@@ -1,5 +1,6 @@
 package com.carlosalbertoxw.boveda.ui.pantallas
 
+import android.view.View
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,6 +8,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -20,7 +23,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -33,15 +35,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.window.DialogWindowProvider
-import com.carlosalbertoxw.boveda.R
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.window.DialogWindowProvider
+import com.carlosalbertoxw.boveda.R
 import com.carlosalbertoxw.boveda.seguridad.Generador
 import com.carlosalbertoxw.boveda.seguridad.Kdf
 
@@ -84,7 +85,8 @@ fun DialogoSeguro(
 private fun EndureceVentanaDelDialogo() {
     val vista = LocalView.current
     SideEffect {
-        val decorado = (vista.parent as? DialogWindowProvider)?.window?.decorView ?: return@SideEffect
+        val ventana = (vista.parent as? DialogWindowProvider)?.window ?: return@SideEffect
+        val decorado = ventana.decorView
         decorado.filterTouchesWhenObscured = true
         decorado.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
     }
@@ -117,14 +119,15 @@ fun CampoSecreto(
             keyboardType = KeyboardType.Password,
             imeAction = imeAction
         ),
-        keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+        keyboardActions = KeyboardActions(
             onDone = { alEnviar?.invoke() },
             onGo = { alEnviar?.invoke() }
         ),
         trailingIcon = {
             IconButton(onClick = { visible = !visible }) {
                 Icon(
-                    imageVector = if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    imageVector =
+                        if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
                     contentDescription = stringResource(
                         if (visible) R.string.ocultar else R.string.mostrar
                     )

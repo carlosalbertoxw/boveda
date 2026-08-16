@@ -1,0 +1,150 @@
+package com.carlosalbertoxw.boveda
+
+import android.content.Context
+import android.net.Uri
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.carlosalbertoxw.boveda.datos.BovedaDatabase
+import com.carlosalbertoxw.boveda.datos.Credencial
+import com.carlosalbertoxw.boveda.datos.GestorRespaldo
+import com.carlosalbertoxw.boveda.seguridad.EstadoBoveda
+import com.carlosalbertoxw.boveda.seguridad.GestorBoveda
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.io.File
+
+/**
+ * Exportar y volver a importar, con la base de verdad.
+ *
+ * El respaldo es la unica salida que tienen los datos, y la unica forma de
+ * recuperarlos si el telefono se pierde. Si esta ida y vuelta se rompe, no se
+ * nota hasta el dia en que hace falta, que es el peor dia para enterarse.
+ */
+@RunWith(AndroidJUnit4::class)
+class FlujoRespaldoTest {
+
+    private val contexto: Context = ApplicationProvider.getApplicationContext()
+    private lateinit var gestor: GestorBoveda
+    private lateinit var respaldo: GestorRespaldo
+    private lateinit var archivo: File
+
+    private val maestra = "correcto caballo bateria grapa"
+    private val claveArchivo = "otra distinta para el archivo"
+
+    private val muestra = listOf(
+        Credencial(titulo = "Banco", usuario = "carlos", contrasena = "melon-42"),
+        Credencial(titulo = "Correo", usuario = "yo@ejemplo.mx", contrasena = "sandia-7")
+    )
+
+    @Before
+    fun arranca() = runBlocking {
+        limpia()
+        gestor = GestorBoveda(contexto)
+        respaldo = GestorRespaldo(contexto, gestor)
+        archivo = File(contexto.cacheDir, "respaldo-de-prueba.json")
+        archivo.delete()
+
+        gestor.crea(maestra.toCharArray())
+        muestra.forEach { dao().inserta(it) }
+    }
+
+    @After
+    fun termina() {
+        runCatching { gestor.bloquea() }
+        archivo.delete()
+        limpia()
+    }
+
+    private fun limpia() {
+        contexto.getSharedPreferences("boveda_config", Context.MODE_PRIVATE)
+            .edit().clear().commit()
+        BovedaDatabase.borraArchivos(contexto)
+    }
+
+    private fun dao() = (gestor.estado.value as EstadoBoveda.Abierta).db.credencialDao()
+
+    private fun destino(): Uri = Uri.fromFile(archivo)
+
+    private suspend fun exporta() =
+        respaldo.exporta(destino(), maestra.toCharArray(), claveArchivo.toCharArray())
+
+    @Test
+    fun lo_exportado_vuelve_completo_tras_vaciar_la_boveda() = runBlocking {
+        assertEquals(GestorRespaldo.Exportacion.Ok(2), exporta())
+        assertTrue(archivo.length() > 0)
+
+        // Se simula el telefono perdido: la boveda queda vacia y solo hay el
+        // archivo.
+        dao().vacia()
+        assertEquals(0, dao().listaCompleta().size)
+
+        val resultado = respaldo.importa(destino(), claveArchivo.toCharArray(), reemplazar = false)
+
+        assertEquals(GestorRespaldo.Importacion.Ok(2, 0), resultado)
+        val recuperadas = dao().listaCompleta().associateBy { it.titulo }
+        assertEquals("melon-42", recuperadas.getValue("Banco").contrasena)
+        assertEquals("yo@ejemplo.mx", recuperadas.getValue("Correo").usuario)
+    }
+
+    @Test
+    fun importar_dos_veces_no_duplica_la_boveda() = runBlocking {
+        exporta()
+
+        respaldo.importa(destino(), claveArchivo.toCharArray(), reemplazar = false)
+        val segunda = respaldo.importa(destino(), claveArchivo.toCharArray(), reemplazar = false)
+
+        // Importar de nuevo por si acaso es lo que hace cualquiera que no esta
+        // seguro de si entro la primera vez. No debe costarle una boveda doble.
+        assertEquals(GestorRespaldo.Importacion.Ok(0, 2), segunda)
+        assertEquals(2, dao().listaCompleta().size)
+    }
+
+    @Test
+    fun exportar_con_la_maestra_equivocada_no_escribe_nada() = runBlocking {
+        val resultado = respaldo.exporta(
+            destino(),
+            "esta no es la maestra".toCharArray(),
+            claveArchivo.toCharArray()
+        )
+
+        // Sacar todas las contrasenas de golpe es la operacion mas peligrosa de
+        // la app: no basta con que la boveda este abierta.
+        assertEquals(GestorRespaldo.Exportacion.MaestraIncorrecta, resultado)
+        assertFalse(archivo.exists() && archivo.length() > 0)
+    }
+
+    @Test
+    fun con_la_clave_del_archivo_equivocada_no_se_importa() = runBlocking {
+        exporta()
+        dao().vacia()
+
+        val resultado = respaldo.importa(
+            destino(),
+            "clave que no es".toCharArray(),
+            reemplazar = false
+        )
+
+        assertEquals(GestorRespaldo.Importacion.ContrasenaIncorrecta, resultado)
+        assertEquals(0, dao().listaCompleta().size)
+    }
+
+    @Test
+    fun el_archivo_exportado_no_lleva_nada_en_claro() = runBlocking {
+        exporta()
+
+        val texto = archivo.readText()
+
+        assertFalse(texto.contains("melon-42"))
+        assertFalse(texto.contains("yo@ejemplo.mx"))
+        assertFalse(texto.contains("Banco"))
+        // La cabecera si va legible, a proposito: dentro de tres anos hay que
+        // poder abrir el archivo y saber que es.
+        assertTrue(texto.contains("boveda-respaldo"))
+    }
+}

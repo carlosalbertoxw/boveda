@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.detekt)
 }
 
 // Las credenciales de firma viven en keystore.properties, fuera del control de
@@ -111,6 +112,15 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+// Antes no habia linter, asi que los descuidos que una herramienta senala
+// gratis —un import sin usar, un nombre totalmente cualificado a mitad de
+// archivo— se acumulaban sin que nadie los viera.
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(files("$rootDir/config/detekt.yml"))
+    source.setFrom(files("src/main/java", "src/test/java", "src/androidTest/java"))
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -151,8 +161,10 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core.ktx)
 
+    // Las pruebas instrumentadas de este proyecto no tocan la interfaz: prueban
+    // el ciclo completo de la boveda contra SQLCipher de verdad, que es lo que
+    // no se puede hacer en la JVM. Por eso no hay espresso ni compose-ui-test:
+    // estaban declarados sin que existiera una sola prueba que los usara.
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.core.ktx)
 }

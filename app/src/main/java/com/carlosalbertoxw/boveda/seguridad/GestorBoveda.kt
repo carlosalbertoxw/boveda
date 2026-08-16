@@ -101,7 +101,8 @@ class GestorBoveda(
         val espera = segundosDeEspera()
         if (espera > 0) return@withContext Apertura.EnEspera(espera)
 
-        val sal = prefs.sal ?: return@withContext Apertura.Falla(texto(R.string.error_no_configurada))
+        val sal = prefs.sal
+            ?: return@withContext Apertura.Falla(texto(R.string.error_no_configurada))
         val sobre = prefs.sobreMaestra
             ?: return@withContext Apertura.Falla(texto(R.string.error_no_configurada))
 

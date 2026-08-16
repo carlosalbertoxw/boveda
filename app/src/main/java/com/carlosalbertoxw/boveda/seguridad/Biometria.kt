@@ -41,10 +41,15 @@ object Biometria {
             actividad,
             ContextCompat.getMainExecutor(actividad),
             object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(resultado: BiometricPrompt.AuthenticationResult) {
+                override fun onAuthenticationSucceeded(
+                    resultado: BiometricPrompt.AuthenticationResult
+                ) {
                     val autenticado = resultado.cryptoObject?.cipher
-                    if (autenticado == null) alFallo(actividad.getString(R.string.aviso_biometria_sin_llave))
-                    else alExito(autenticado)
+                    if (autenticado == null) {
+                        alFallo(actividad.getString(R.string.aviso_biometria_sin_llave))
+                    } else {
+                        alExito(autenticado)
+                    }
                 }
 
                 override fun onAuthenticationError(codigo: Int, mensaje: CharSequence) {

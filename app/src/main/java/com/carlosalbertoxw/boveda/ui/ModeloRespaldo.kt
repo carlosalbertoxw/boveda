@@ -63,7 +63,8 @@ class ModeloRespaldo(app: Application) : AndroidViewModel(app) {
             try {
                 bloque()
             } catch (e: Exception) {
-                avisos.muestra(e.message ?: getApplication<Application>().getString(R.string.aviso_generico))
+                val generico = getApplication<Application>().getString(R.string.aviso_generico)
+                avisos.muestra(e.message ?: generico)
             } finally {
                 _ocupado.value = false
             }

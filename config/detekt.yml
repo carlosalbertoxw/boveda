@@ -1,0 +1,65 @@
+# Configuracion de detekt para Boveda.
+#
+# Parte de la configuracion por omision (buildUponDefaultConfig) y solo ajusta
+# lo que choca con como esta escrito este proyecto. El criterio para apagar una
+# regla es que su aviso no senale un problema real aqui: un linter que grita
+# donde no hay nada se acaba ignorando entero, y entonces no sirve para lo que
+# se puso.
+
+style:
+  # Los numeros sueltos de esta app son medidas de interfaz (dp, sp) y
+  # parametros de cripto que ya viven en constantes con nombre.
+  MagicNumber:
+    active: false
+  # El proyecto usa comillas dobles con interpolacion a lo largo de toda la
+  # interfaz; no aporta nada perseguirlo.
+  MaxLineLength:
+    maxLineLength: 100
+    excludes: ['**/test/**', '**/androidTest/**']
+  # Devolver temprano es el estilo de este proyecto y se lee mejor que anidar:
+  # Respaldo.lee, por ejemplo, valida el archivo campo a campo y sale con el
+  # motivo exacto en cuanto algo no cuadra.
+  ReturnCount:
+    active: false
+
+complexity:
+  # Las pantallas de Compose son largas por naturaleza: describen un arbol.
+  LongMethod:
+    excludes: ['**/ui/**', '**/test/**', '**/androidTest/**']
+  LongParameterList:
+    excludes: ['**/ui/**']
+    # Biometria.pide toma seis: la actividad, el cifrador, los dos textos del
+    # dialogo del sistema y las dos salidas. Agruparlos en un objeto solo
+    # moveria la lista de sitio.
+    functionThreshold: 7
+  TooManyFunctions:
+    excludes: ['**/test/**', '**/androidTest/**']
+    thresholdInClasses: 30
+    thresholdInFiles: 30
+    thresholdInObjects: 20
+
+naming:
+  # Dos excepciones: los composables van en MayusculaInicial, que es la
+  # convencion de Compose; y los nombres de prueba van en espanol y con frases
+  # completas entre acentos graves, que es a proposito —se leen como el informe
+  # de lo que fallo—.
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+    excludes: ['**/test/**', '**/androidTest/**']
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][_A-Z0-9]*'
+
+performance:
+  # El unico spread del proyecto es addMigrations(*MIGRACIONES), que corre una
+  # vez al abrir la base sobre un arreglo hoy vacio.
+  SpreadOperator:
+    active: false
+
+exceptions:
+  # En esta app hay dos sitios donde atrapar de mas es deliberado y esta
+  # comentado: al abrir la base (cualquier fallo se convierte en un aviso al
+  # usuario en vez de una caida) y en los modelos de vista.
+  TooGenericExceptionCaught:
+    active: false
+  SwallowedException:
+    active: false

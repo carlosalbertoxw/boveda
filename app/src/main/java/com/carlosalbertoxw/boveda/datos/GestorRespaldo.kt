@@ -61,7 +61,9 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
             app.contentResolver.openOutputStream(destino, "wt")?.use { it.write(archivo) }
                 ?: return@withContext Exportacion.Falla(texto(R.string.error_destino_no_escribible))
         } catch (e: IOException) {
-            return@withContext Exportacion.Falla(e.message ?: texto(R.string.error_escribir_archivo))
+            return@withContext Exportacion.Falla(
+                e.message ?: texto(R.string.error_escribir_archivo)
+            )
         } catch (e: SecurityException) {
             return@withContext Exportacion.Falla(texto(R.string.error_sin_permiso_escritura))
         }

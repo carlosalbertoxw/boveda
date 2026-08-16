@@ -149,7 +149,8 @@ fun PantallaDetalle(
                         )
                         IconButton(onClick = { visible = !visible }) {
                             Icon(
-                                if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                if (visible) Icons.Filled.VisibilityOff
+                                else Icons.Filled.Visibility,
                                 contentDescription = stringResource(
                                     if (visible) R.string.ocultar else R.string.mostrar
                                 )
@@ -200,7 +201,9 @@ fun PantallaDetalle(
                 }
             }
 
-            val formato = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
+            val formato = remember {
+                DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+            }
             Text(
                 stringResource(
                     R.string.detalle_actualizada,
