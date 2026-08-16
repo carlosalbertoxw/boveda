@@ -23,15 +23,23 @@ abstract class BovedaDatabase : RoomDatabase() {
          *
          * No hay camino sin cifrar ni fallback: si SQLCipher no carga, la app no
          * abre. Es preferible a guardar contrasenas en claro sin avisar.
+         *
+         * [frase] se recibe como ByteArray y no como String a proposito: un
+         * String es inmutable y no se puede poner en ceros, asi que el secreto
+         * mas importante de la app se quedaria en el heap hasta que pasara el
+         * recolector. SupportOpenHelperFactory llena de ceros el arreglo que
+         * recibe en cuanto abre la base, asi que este es el ultimo sitio donde
+         * la frase existe, y dura lo que tarda la apertura. Quien llama debe
+         * pasar una copia suya, no el original que quiera conservar.
          */
-        fun abre(contexto: Context, frase: String): BovedaDatabase {
+        fun abre(contexto: Context, frase: ByteArray): BovedaDatabase {
             System.loadLibrary("sqlcipher")
             return Room.databaseBuilder(
                 contexto.applicationContext,
                 BovedaDatabase::class.java,
                 NOMBRE
             )
-                .openHelperFactory(SupportOpenHelperFactory(frase.toByteArray(Charsets.UTF_8)))
+                .openHelperFactory(SupportOpenHelperFactory(frase))
                 .build()
         }
 

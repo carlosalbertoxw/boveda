@@ -1,7 +1,6 @@
 package com.carlosalbertoxw.boveda.seguridad
 
 import android.content.Context
-import android.os.SystemClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,7 +41,10 @@ sealed interface Apertura {
  * y la huella y la contrasena son dos caminos independientes a la misma frase,
  * asi que perder uno no te deja fuera.
  */
-class GestorBoveda(private val app: Context) {
+class GestorBoveda(
+    private val app: Context,
+    private val reloj: Reloj = Reloj.Sistema
+) {
 
     val prefs = PreferenciasBoveda(app)
 
@@ -55,8 +57,18 @@ class GestorBoveda(private val app: Context) {
      * La frase viva mientras la boveda esta abierta. Hace falta guardarla para
      * poder activar la huella o cambiar la maestra sin volver a pedir nada. Se
      * sobreescribe con ceros al bloquear.
+     *
+     * Se toca desde tres sitios con hilos distintos —Dispatchers.Default al
+     * abrir con maestra, IO al abrir con huella y el hilo principal al activar
+     * la huella o bloquear—, asi que las lecturas van con @Volatile y todo
+     * cambio pasa por [candado]. Es un cerrojo normal y no un Mutex de
+     * corrutinas porque [bloquea] y [restablece] no son suspend y las secciones
+     * duran lo que tarda asignar un puntero y llenar 32 bytes de ceros.
      */
+    @Volatile
     private var fraseViva: ByteArray? = null
+
+    private val candado = Any()
 
     val abierta: Boolean get() = _estado.value is EstadoBoveda.Abierta
 
@@ -71,12 +83,10 @@ class GestorBoveda(private val app: Context) {
         val sal = Sobre.aleatorio(Kdf.BYTES_SAL)
         val kek = Kdf.deriva(maestra, sal, Kdf.ITERACIONES)
         try {
-            prefs.sal = sal
-            prefs.iteraciones = Kdf.ITERACIONES
-            prefs.sobreMaestra = Sobre.cierra(kek, frase)
+            prefs.guardaEnvoltura(sal, Kdf.ITERACIONES, Sobre.cierra(kek, frase))
             prefs.sobreBiometrico = null
             prefs.fallosSeguidos = 0
-            prefs.esperaHasta = 0L
+            prefs.limpiaEspera()
             AlmacenBiometrico.borraLlave()
         } finally {
             Sobre.borra(kek)
@@ -107,8 +117,28 @@ class GestorBoveda(private val app: Context) {
         if (frase == null) return@withContext registraFallo()
 
         prefs.fallosSeguidos = 0
-        prefs.esperaHasta = 0L
+        prefs.limpiaEspera()
+        // La maestra correcta esta en memoria justo ahora y en ningun otro
+        // momento: es la unica ocasion de encarecer la derivacion sin pedirle
+        // nada al usuario. Sin esto, una boveda creada hoy seguiria con las
+        // iteraciones de hoy dentro de diez anos.
+        if (prefs.iteraciones < Kdf.ITERACIONES) reenvuelve(maestra, frase)
         abreBase(frase)
+    }
+
+    /**
+     * Vuelve a envolver la misma frase con sal nueva y las iteraciones
+     * actuales. No toca la base: igual que [cambiaMaestra], lo que cambia es
+     * la envoltura, no lo envuelto.
+     */
+    private fun reenvuelve(maestra: CharArray, frase: ByteArray) {
+        val salNueva = Sobre.aleatorio(Kdf.BYTES_SAL)
+        val kek = Kdf.deriva(maestra, salNueva, Kdf.ITERACIONES)
+        try {
+            prefs.guardaEnvoltura(salNueva, Kdf.ITERACIONES, Sobre.cierra(kek, frase))
+        } finally {
+            Sobre.borra(kek)
+        }
     }
 
     /**
@@ -129,7 +159,7 @@ class GestorBoveda(private val app: Context) {
                 )
             }
             prefs.fallosSeguidos = 0
-            prefs.esperaHasta = 0L
+            prefs.limpiaEspera()
             abreBase(frase)
         }
 
@@ -137,13 +167,15 @@ class GestorBoveda(private val app: Context) {
         // Copia defensiva: SupportOpenHelperFactory pone en ceros el arreglo que
         // recibe en cuanto abre la base, y aqui hace falta conservar la frase
         // para poder activar la huella o cambiar la maestra despues.
-        val db = BovedaDatabase.abre(app, String(frase.copyOf(), Charsets.UTF_8))
+        val db = BovedaDatabase.abre(app, frase.copyOf())
         // Room abre en diferido, en la primera consulta. Se fuerza la apertura
         // aqui, que ya vamos fuera del hilo principal, para que un archivo
         // corrupto falle ahora y no a media pantalla de listado.
         db.openHelper.writableDatabase
-        fraseViva?.let { Sobre.borra(it) }
-        fraseViva = frase
+        synchronized(candado) {
+            fraseViva?.let { Sobre.borra(it) }
+            fraseViva = frase
+        }
         _estado.value = EstadoBoveda.Abierta(db)
         Apertura.Ok
     } catch (e: Exception) {
@@ -161,8 +193,10 @@ class GestorBoveda(private val app: Context) {
         _estado.value =
             if (prefs.estaConfigurada) EstadoBoveda.Cerrada else EstadoBoveda.SinConfigurar
         runCatching { abierta.db.close() }
-        fraseViva?.let { Sobre.borra(it) }
-        fraseViva = null
+        synchronized(candado) {
+            fraseViva?.let { Sobre.borra(it) }
+            fraseViva = null
+        }
     }
 
     // --- Mantenimiento ---------------------------------------------------
@@ -189,9 +223,7 @@ class GestorBoveda(private val app: Context) {
             val salNueva = Sobre.aleatorio(Kdf.BYTES_SAL)
             val kekNueva = Kdf.deriva(nueva, salNueva, Kdf.ITERACIONES)
             try {
-                prefs.sal = salNueva
-                prefs.iteraciones = Kdf.ITERACIONES
-                prefs.sobreMaestra = Sobre.cierra(kekNueva, frase)
+                prefs.guardaEnvoltura(salNueva, Kdf.ITERACIONES, Sobre.cierra(kekNueva, frase))
             } finally {
                 Sobre.borra(kekNueva, frase)
             }
@@ -219,7 +251,7 @@ class GestorBoveda(private val app: Context) {
 
     /** Envuelve la frase viva con la llave del Keystore ya autenticada. */
     fun activaBiometrico(cifradorAutenticado: Cipher): Boolean {
-        val frase = fraseViva ?: return false
+        val frase = synchronized(candado) { fraseViva } ?: return false
         return runCatching {
             prefs.sobreBiometrico = cifradorAutenticado.iv + cifradorAutenticado.doFinal(frase)
             true
@@ -232,8 +264,10 @@ class GestorBoveda(private val app: Context) {
     /** Borrado total e irreversible: base, envolturas y llave del Keystore. */
     fun restablece() {
         (_estado.value as? EstadoBoveda.Abierta)?.db?.let { runCatching { it.close() } }
-        fraseViva?.let { Sobre.borra(it) }
-        fraseViva = null
+        synchronized(candado) {
+            fraseViva?.let { Sobre.borra(it) }
+            fraseViva = null
+        }
         BovedaDatabase.borraArchivos(app)
         AlmacenBiometrico.borraLlave()
         prefs.borraTodo()
@@ -242,9 +276,32 @@ class GestorBoveda(private val app: Context) {
 
     // --- Freno a la fuerza bruta -----------------------------------------
 
-    fun segundosDeEspera(): Int {
-        val restante = prefs.esperaHasta - SystemClock.elapsedRealtime()
-        return if (restante > 0) ((restante + 999) / 1000).toInt() else 0
+    /**
+     * Cuanto falta para volver a aceptar intentos, cruzando los dos relojes.
+     *
+     * El castigo se guarda medido con ambos y aqui se toma **el mayor de los
+     * dos restantes**: para volver a intentar hay que haber esperado tanto en
+     * el reloj monotonico como en el de pared. Adelantar la fecha del telefono
+     * no sirve, porque el monotonico sigue corriendo; y el monotonico por si
+     * solo tampoco basta, porque se reinicia al apagar el equipo.
+     *
+     * La clave esta en [restante]: ningun vencimiento puede pedir mas de lo que
+     * dura el castigo mas largo. Si pide mas, ese reloj se movio por debajo
+     * —reinicio, o fecha cambiada a mano— y su cuenta ya no significa nada, asi
+     * que se recorta. Eso acota la espera a [CASTIGO_MAXIMO] pase lo que pase:
+     * el fallo que dejaba al dueno fuera de su boveda durante dias deja de ser
+     * posible, y al atacante recortar no le regala nada, porque el castigo real
+     * nunca fue mas largo que ese tope.
+     */
+    fun segundosDeEspera(): Int = maxOf(
+        restante(prefs.esperaMonotonicaHasta - reloj.monotonico()),
+        restante(prefs.esperaParedHasta - reloj.pared())
+    )
+
+    private fun restante(milisegundos: Long): Int = when {
+        milisegundos <= 0L -> 0
+        milisegundos > CASTIGO_MAXIMO * 1000L -> CASTIGO_MAXIMO
+        else -> ((milisegundos + 999) / 1000).toInt()
     }
 
     private fun registraFallo(): Apertura {
@@ -259,7 +316,9 @@ class GestorBoveda(private val app: Context) {
 
         val castigo = castigo(fallos)
         if (castigo > 0) {
-            prefs.esperaHasta = SystemClock.elapsedRealtime() + castigo * 1000L
+            val milisegundos = castigo * 1000L
+            prefs.esperaMonotonicaHasta = reloj.monotonico() + milisegundos
+            prefs.esperaParedHasta = reloj.pared() + milisegundos
         }
         return Apertura.Incorrecta(fallos, castigo)
     }
@@ -272,10 +331,15 @@ class GestorBoveda(private val app: Context) {
      */
     private fun castigo(fallos: Int): Int = when {
         fallos <= 3 -> 0
-        fallos >= 9 -> 300
+        fallos >= 9 -> CASTIGO_MAXIMO
         else -> 15 shl (fallos - 4)
     }
 
     private fun aHex(bytes: ByteArray): String =
         bytes.joinToString("") { "%02x".format(it) }
+
+    companion object {
+        /** Techo del castigo, y por tanto techo de cualquier espera posible. */
+        const val CASTIGO_MAXIMO = 300
+    }
 }

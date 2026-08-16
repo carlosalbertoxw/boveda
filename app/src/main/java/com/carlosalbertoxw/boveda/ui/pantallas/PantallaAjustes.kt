@@ -15,7 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -322,10 +322,10 @@ private fun DialogoCambioMaestra(
 
     val valida = actual.isNotEmpty() && nueva.length >= 10 && nueva == repetida
 
-    AlertDialog(
-        onDismissRequest = alCerrar,
-        title = { Text("Cambiar contrasena maestra") },
-        text = {
+    DialogoSeguro(
+        alCerrar = alCerrar,
+        titulo = { Text("Cambiar contrasena maestra") },
+        contenido = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CampoSecreto(actual, { actual = it }, "Contrasena actual")
                 CampoSecreto(nueva, { nueva = it }, "Nueva contrasena")
@@ -344,12 +344,12 @@ private fun DialogoCambioMaestra(
                 )
             }
         },
-        confirmButton = {
+        botonConfirmar = {
             TextButton(onClick = { alConfirmar(actual, nueva) }, enabled = valida) {
                 Text("Cambiar")
             }
         },
-        dismissButton = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
+        botonCancelar = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
     )
 }
 
@@ -364,10 +364,10 @@ private fun DialogoExportar(
 
     val valida = maestra.isNotEmpty() && clave.length >= 10 && clave == repetida
 
-    AlertDialog(
-        onDismissRequest = alCerrar,
-        title = { Text("Exportar respaldo") },
-        text = {
+    DialogoSeguro(
+        alCerrar = alCerrar,
+        titulo = { Text("Exportar respaldo") },
+        contenido = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     "Sacar todas tus contrasenas de la boveda es la operacion mas " +
@@ -395,12 +395,12 @@ private fun DialogoExportar(
                 )
             }
         },
-        confirmButton = {
+        botonConfirmar = {
             TextButton(onClick = { alConfirmar(maestra, clave) }, enabled = valida) {
                 Text("Exportar")
             }
         },
-        dismissButton = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
+        botonCancelar = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
     )
 }
 
@@ -412,10 +412,10 @@ private fun DialogoImportar(
     var clave by remember { mutableStateOf("") }
     var reemplazar by remember { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = alCerrar,
-        title = { Text("Importar respaldo") },
-        text = {
+    DialogoSeguro(
+        alCerrar = alCerrar,
+        titulo = { Text("Importar respaldo") },
+        contenido = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CampoSecreto(
                     valor = clave,
@@ -435,12 +435,12 @@ private fun DialogoImportar(
                 )
             }
         },
-        confirmButton = {
+        botonConfirmar = {
             TextButton(onClick = { alConfirmar(clave, reemplazar) }, enabled = clave.isNotEmpty()) {
                 Text("Importar")
             }
         },
-        dismissButton = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
+        botonCancelar = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
     )
 }
 
@@ -451,13 +451,13 @@ private fun DialogoBorradoTotal(alConfirmar: () -> Unit, alCerrar: () -> Unit) {
     // solo toque de distancia.
     val confirmado = escrito.trim().equals("BORRAR", ignoreCase = false)
 
-    AlertDialog(
-        onDismissRequest = alCerrar,
-        title = { Text("Borrar la boveda") },
-        text = {
+    DialogoSeguro(
+        alCerrar = alCerrar,
+        titulo = { Text("Borrar la boveda") },
+        contenido = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Se perderan todas las entradas. Escribe BORRAR para confirmar.")
-                androidx.compose.material3.OutlinedTextField(
+                OutlinedTextField(
                     value = escrito,
                     onValueChange = { escrito = it },
                     singleLine = true,
@@ -466,11 +466,11 @@ private fun DialogoBorradoTotal(alConfirmar: () -> Unit, alCerrar: () -> Unit) {
                 )
             }
         },
-        confirmButton = {
+        botonConfirmar = {
             TextButton(onClick = alConfirmar, enabled = confirmado) {
                 Text("Borrar todo", color = MaterialTheme.colorScheme.error)
             }
         },
-        dismissButton = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
+        botonCancelar = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
     )
 }

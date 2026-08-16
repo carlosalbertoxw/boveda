@@ -20,8 +20,10 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +31,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -38,6 +42,51 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import com.carlosalbertoxw.boveda.seguridad.Generador
 import com.carlosalbertoxw.boveda.seguridad.Kdf
+
+/**
+ * Un dialogo con las mismas defensas que la pantalla que hay debajo.
+ *
+ * Aqui esta el detalle que se escapa facil: `filterTouchesWhenObscured` e
+ * `importantForAutofill` se fijan en MainActivity sobre el decorView de la
+ * Activity, pero un dialogo de Compose se pinta en **su propia ventana**, con
+ * su propio decorView, que no hereda ninguno de los dos. Sin esto, justo las
+ * pantallas donde se teclea la maestra —exportar, cambiar contrasena— y las
+ * que destruyen datos quedaban fuera de las dos protecciones: un servicio de
+ * autocompletado podia ofrecerse a guardar la maestra, y una app con permiso
+ * de dibujar encima podia tapar el dialogo y hacer pulsar "Borrar todo".
+ *
+ * FLAG_SECURE no hace falta repetirlo: DialogProperties lo hereda de la
+ * ventana de la Activity por omision (SecureFlagPolicy.Inherit).
+ */
+@Composable
+fun DialogoSeguro(
+    alCerrar: () -> Unit,
+    titulo: @Composable () -> Unit,
+    contenido: @Composable () -> Unit,
+    botonConfirmar: @Composable () -> Unit,
+    botonCancelar: @Composable (() -> Unit)? = null
+) {
+    AlertDialog(
+        onDismissRequest = alCerrar,
+        title = titulo,
+        text = {
+            EndureceVentanaDelDialogo()
+            contenido()
+        },
+        confirmButton = botonConfirmar,
+        dismissButton = botonCancelar
+    )
+}
+
+@Composable
+private fun EndureceVentanaDelDialogo() {
+    val vista = LocalView.current
+    SideEffect {
+        val decorado = (vista.parent as? DialogWindowProvider)?.window?.decorView ?: return@SideEffect
+        decorado.filterTouchesWhenObscured = true
+        decorado.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+    }
+}
 
 /**
  * Campo de contrasena. Oculto por omision y con teclado de tipo Password, que
@@ -131,10 +180,10 @@ fun DialogoGenerador(alElegir: (String) -> Unit, alCerrar: () -> Unit) {
         propuesta = Generador.genera(ajustes)
     }
 
-    AlertDialog(
-        onDismissRequest = alCerrar,
-        title = { Text("Generar contrasena") },
-        text = {
+    DialogoSeguro(
+        alCerrar = alCerrar,
+        titulo = { Text("Generar contrasena") },
+        contenido = {
             Column {
                 Text(
                     propuesta,
@@ -163,10 +212,10 @@ fun DialogoGenerador(alElegir: (String) -> Unit, alCerrar: () -> Unit) {
                 }
             }
         },
-        confirmButton = {
+        botonConfirmar = {
             TextButton(onClick = { alElegir(propuesta); alCerrar() }) { Text("Usar") }
         },
-        dismissButton = {
+        botonCancelar = {
             TextButton(onClick = alCerrar) { Text("Cancelar") }
         }
     )

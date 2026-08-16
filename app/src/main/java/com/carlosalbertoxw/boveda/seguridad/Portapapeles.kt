@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
 
 /**
  * El portapapeles es el punto mas debil de cualquier gestor de contrasenas: es
@@ -36,7 +37,20 @@ object Portapapeles {
     private const val ETIQUETA_SENSIBLE = "android.content.extra.IS_SENSITIVE"
 
     private var borradoPendiente: Job? = null
-    private var ultimoCopiado: String? = null
+
+    /**
+     * Del ultimo texto copiado se guarda su SHA-256, no el texto.
+     *
+     * Solo hace falta para responder a "lo que hay en el portapapeles, ¿sigue
+     * siendo lo nuestro?", y para eso comparar huellas vale igual que comparar
+     * cadenas. Guardar el texto significaba tener un segundo ejemplar de la
+     * contrasena vivo en un objeto de la vida del proceso, fuera de la base
+     * cifrada y —al ser un String— imposible de poner en ceros.
+     */
+    private var huellaUltimoCopiado: ByteArray? = null
+
+    private fun huella(texto: String): ByteArray =
+        MessageDigest.getInstance("SHA-256").digest(texto.toByteArray(Charsets.UTF_8))
 
     fun copia(
         contexto: Context,
@@ -52,13 +66,14 @@ object Portapapeles {
             }
         }
         gestor.setPrimaryClip(clip)
-        ultimoCopiado = texto
+        val huella = huella(texto)
+        huellaUltimoCopiado = huella
 
         borradoPendiente?.cancel()
         if (segundos <= 0) return
         borradoPendiente = alcance.launch {
             delay(segundos * 1000L)
-            limpiaSiSigueSiendoNuestro(contexto, texto)
+            limpiaSiEsNuestro(contexto, huella)
         }
     }
 
@@ -72,16 +87,18 @@ object Portapapeles {
      * corre mientras la app esta al frente.
      */
     fun limpiaTodo(contexto: Context) {
-        ultimoCopiado?.let { limpiaSiSigueSiendoNuestro(contexto, it) }
-        ultimoCopiado = null
+        huellaUltimoCopiado?.let { limpiaSiEsNuestro(contexto, it) }
+        huellaUltimoCopiado = null
     }
 
-    fun limpiaSiSigueSiendoNuestro(contexto: Context, texto: String) {
+    private fun limpiaSiEsNuestro(contexto: Context, huellaEsperada: ByteArray) {
         val gestor = contexto.getSystemService(ClipboardManager::class.java) ?: return
         val actual = runCatching {
             gestor.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString()
-        }.getOrNull()
-        if (actual != texto) return
+        }.getOrNull() ?: return
+        // Comparacion en tiempo constante: no protege de nada aqui, pero es la
+        // forma correcta de comparar huellas y no cuesta mas.
+        if (!MessageDigest.isEqual(huella(actual), huellaEsperada)) return
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             runCatching { gestor.clearPrimaryClip() }
