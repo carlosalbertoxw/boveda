@@ -5,7 +5,8 @@ Guardas una credencial, y cuando no recuerdas una entras, la ves o la copias.
 
 - **Paquete:** `com.carlosalbertoxw.boveda`
 - **minSdk 26 · targetSdk 36 · Kotlin + Jetpack Compose**
-- **Estado:** compila en debug y release, 25 pruebas unitarias en verde (criptografía y respaldo).
+- **Estado:** compila en debug y release, 56 pruebas unitarias en verde (criptografía, respaldo,
+  candado y preferencias) más dos suites instrumentadas de flujo.
 
 ---
 
@@ -23,10 +24,23 @@ Desde la terminal:
 JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:assembleDebug
 ```
 
-Las pruebas:
+Las pruebas de la JVM (56, sin dispositivo):
 
 ```bash
 JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:testDebugUnitTest
+```
+
+Las instrumentadas recorren el ciclo completo contra SQLCipher de verdad, así que piden un
+emulador o un teléfono conectado:
+
+```bash
+JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:connectedDebugAndroidTest
+```
+
+El linter:
+
+```bash
+JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:detekt
 ```
 
 ### Firmar el release
@@ -88,6 +102,17 @@ caminos independientes a la misma frase.
 | Keystore con `setUserAuthenticationRequired` | El chip se niega a descifrar sin huella válida | [AlmacenBiometrico.kt](app/src/main/java/com/carlosalbertoxw/boveda/seguridad/AlmacenBiometrico.kt) |
 | Freno exponencial + borrado opcional | 3 intentos gratis, luego 15 s → 5 min | [GestorBoveda.kt](app/src/main/java/com/carlosalbertoxw/boveda/seguridad/GestorBoveda.kt) |
 
+**La espera se mide con los dos relojes del sistema y se cruzan al leerla.** El monotónico no
+se deja mover cambiando la fecha del teléfono, pero se reinicia al apagarlo; el de pared
+sobrevive al apagón, pero se puede atrasar a mano. Guardando ambos, adelantar la fecha no
+saltea el castigo y reiniciar no lo alarga: si uno de los dos pide más de lo que dura el
+castigo más largo posible, es que se movió por debajo y manda el otro. Está probado en
+[CandadoTest](app/src/test/java/com/carlosalbertoxw/boveda/CandadoTest.kt).
+
+**Las iteraciones se ponen al día solas.** Se guardan junto a la sal, y al desbloquear con la
+maestra —el único momento en que está en memoria— se vuelve a envolver la frase si el número
+subió desde que se creó la bóveda. Sin eso, el parámetro se quedaba congelado para siempre.
+
 **La contraseña maestra no se guarda en ningún lado, ni siquiera como hash.** Lo que
 verifica que acertaste es que la etiqueta GCM cuadre al desenvolver. Un hash guardado sería
 una pista extra para quien se lleve el archivo.
@@ -114,6 +139,10 @@ una pista extra para quien se lleve el archivo.
   y te haga pulsar "mostrar contraseña" creyendo que pulsas otra cosa.
 - Autofill desactivado en todo el árbol: otro gestor instalado no puede pedir guardar lo que
   escribes aquí.
+- **Los diálogos llevan las mismas defensas.** Un diálogo de Compose se pinta en su propia
+  ventana y no hereda ni el anti-*tapjacking* ni la exclusión de autofill de la Activity, así
+  que se las aplica una por una `DialogoSeguro`. Es donde se teclea la maestra al exportar y
+  donde se confirma el borrado, o sea justo donde más falta hacen.
 - La contraseña nunca aparece en el listado. Revelarla se vuelve a tapar sola a los 20 s.
 - Cierre automático al pasar a segundo plano y por inactividad (configurable).
 
@@ -123,6 +152,10 @@ Es el punto más débil de cualquier gestor: es el único momento en que el secr
 app, y en Android es un buzón compartido. Se acota marcándolo como sensible (Android 13+ no
 lo muestra en la vista previa), borrándolo solo a los 30 s y comprobando antes que siga
 siendo nuestro para no pisarle al usuario algo que copió después.
+
+De lo copiado la app guarda su SHA-256, no el texto: para responder a "¿esto sigue siendo lo
+nuestro?" comparar huellas vale igual, y así no queda un segundo ejemplar de la contraseña
+vivo en memoria —que además, al ser un `String`, no se podría poner en ceros—.
 
 ---
 
@@ -189,8 +222,8 @@ Vale más decirlo que fingir que no existe:
   sobreescriben con ceros al terminar.
 - **PBKDF2, no Argon2id.** Argon2id resistiría mejor a un atacante con GPU, pero exige una
   librería nativa de terceros. Se prefirió no ampliar la superficie de confianza. El número
-  de iteraciones se guarda junto a la sal, así que se puede subir después sin dejar
-  inservibles las bóvedas ya creadas.
+  de iteraciones se guarda junto a la sal y se sube solo al desbloquear, así que las bóvedas
+  viejas se ponen al día sin quedar inservibles.
 
 ---
 
@@ -203,6 +236,7 @@ app/src/main/java/com/carlosalbertoxw/boveda/
 ├── seguridad/
 │   ├── Sobre.kt             AES-256-GCM
 │   ├── Kdf.kt               PBKDF2 + medidor de fuerza
+│   ├── Reloj.kt             Los dos relojes, tras una interfaz (y por eso probables)
 │   ├── AlmacenBiometrico.kt Llave del Keystore ligada a la huella
 │   ├── Biometria.kt         BiometricPrompt, siempre con CryptoObject
 │   ├── GestorBoveda.kt      Abrir, cerrar, cambiar maestra, borrar
@@ -213,5 +247,25 @@ app/src/main/java/com/carlosalbertoxw/boveda/
 │   ├── Credencial.kt        Entidad, BovedaDatabase.kt, CredencialDao.kt
 │   ├── Respaldo.kt          Formato del archivo: sobre JSON + AES-GCM con AAD
 │   └── GestorRespaldo.kt    Exportar/importar por SAF, fusión y deduplicado
-└── ui/                      Compose: alta, desbloqueo, listado, detalle, editor, ajustes
+└── ui/
+    ├── ModeloBoveda.kt      Único camino de la interfaz hacia la bóveda
+    ├── ModeloRespaldo.kt    Exportar e importar, con su propio estado
+    ├── Avisos.kt            Buzón único de mensajes para la barra de abajo
+    ├── Mensajes.kt          Cómo se le cuenta al usuario lo que devolvió cada capa
+    └── pantallas/           Compose: alta, desbloqueo, listado, detalle, editor, ajustes
 ```
+
+La interfaz no toca preferencias ni el Keystore: todo lo que cruza esa línea pasa por un
+método con nombre de `ModeloBoveda`, y los ajustes salen como estado observable.
+
+## Pruebas
+
+| Suite | Qué cubre |
+|---|---|
+| `CriptografiaTest` | Que el sobre AES-GCM detecte manipulaciones, que la derivación dependa de los bytes reales (acentos y emojis incluidos) y que el generador no se repita |
+| `RespaldoTest` | El formato del archivo: ida y vuelta completa, que nada viaje en claro y que bajar las iteraciones de la cabecera lo invalide |
+| `CandadoTest` | El freno a la fuerza bruta con un reloj falso: los tres intentos gratis, el crecimiento del castigo, el tope, y que ni reiniciar el teléfono ni cambiar la fecha lo alteren |
+| `PreferenciasBovedaTest` | Que sal, iteraciones y sobre viajen siempre juntos, que es lo que separa una bóveda legible de una perdida |
+| `FusionTest` | Que importar dos veces el mismo archivo no duplique la bóveda |
+| `FlujoBovedaTest` *(instrumentada)* | El ciclo completo contra SQLCipher real, incluido que el `.db` no contenga nada legible |
+| `FlujoRespaldoTest` *(instrumentada)* | Exportar y recuperar tras vaciar la bóveda, y que exportar exija la maestra |
