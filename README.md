@@ -12,8 +12,10 @@ Guardas una credencial, y cuando no recuerdas una entras, la ves o la copias.
 ## Cómo se construye
 
 Requiere **JDK 21**. El JBR 25 que trae el Android Studio actual rompe AGP 8.10 con un
-error ilegible (`* What went wrong: 25.0.2`). El proyecto ya viene apuntado al JBR 21 que
-tienes en `~/.jdks/jbr-21.0.11`.
+error ilegible (`* What went wrong: 25.0.2`). La ruta al JDK vive en la configuración
+local de Android Studio (`.idea/`, `.gradle/`), que no se versiona: en un clon nuevo hay
+que volver a apuntarla en *Settings → Build Tools → Gradle → Gradle JDK*, o pasar
+`JAVA_HOME` en cada invocación como en los ejemplos de abajo.
 
 Desde la terminal:
 
