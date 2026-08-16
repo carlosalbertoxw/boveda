@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      La boveda no habla con nadie. No se declara INTERNET, y ademas se borra
+      explicitamente por si alguna dependencia futura la mete por la puerta de
+      atras en su propio manifiesto: el merge la eliminaria igual. Sin este
+      permiso el sistema operativo bloquea cualquier socket, asi que ni un bug
+      ni una libreria maliciosa pueden sacar una contrasena del telefono.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <application
+        android:name=".AplicacionBoveda"
+        android:label="@string/nombre_app"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.Boveda"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
+        android:networkSecurityConfig="@xml/seguridad_red"
+        android:localeConfig="@xml/idiomas"
+        android:enableOnBackInvokedCallback="true"
+        android:memtagMode="async"
+        android:largeHeap="false"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/reglas_extraccion">
+
+        <!--
+          allowBackup="false" es deliberado y no es un descuido: si el respaldo
+          estuviera activo, la base cifrada viajaria a Google Drive y a cualquier
+          respaldo por adb. Aqui el archivo nunca sale del dispositivo.
+        -->
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="false"
+            android:screenOrientation="unspecified"
+            android:configChanges="uiMode"
+            android:theme="@style/Theme.Boveda">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!--
+              Sin intent-filters de VIEW, SEND ni nada abierto: la unica forma
+              de entrar es tocando el icono. Ninguna otra app puede lanzarla
+              con datos ni pedirle nada.
+            -->
+        </activity>
+
+        <!--
+          androidx.startup mete un ContentProvider para inicializar
+          lifecycle-process. Es interno y va sin exportar, pero se deja escrito
+          para que quede constancia de que se reviso.
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge" />
+
+        <!--
+          Lo que sigue son componentes que meten las librerias por su cuenta y
+          que esta app no usa. Se quitan para que el unico componente expuesto
+          del paquete sea el icono del lanzador, y nada mas.
+        -->
+
+        <!--
+          Room lo declara para invalidar cachés entre varios procesos. Aqui hay
+          un solo proceso y nunca se llama a enableMultiInstanceInvalidation().
+        -->
+        <service
+            android:name="androidx.room.MultiInstanceInvalidationService"
+            tools:node="remove" />
+
+        <!--
+          profileinstaller (lo arrastra Compose) declara un receiver EXPORTADO.
+          Lo protege el permiso DUMP, que una app normal no puede obtener, pero
+          el shell si: por adb se le pueden mandar ordenes. Solo sirve para
+          instalar perfiles de arranque —unos milisegundos de rendimiento— y no
+          vale un componente accesible desde fuera en una app de contrasenas.
+        -->
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:node="remove" />
+    </application>
+
+</manifest>

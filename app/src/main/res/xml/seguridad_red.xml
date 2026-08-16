@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cinturon y tirantes. Sin permiso de INTERNET esto ya es inalcanzable, pero
+  si algun dia alguien agrega el permiso sin pensarlo, esta politica sigue
+  prohibiendo texto claro y no confia en ninguna CA agregada por el usuario,
+  que es como se monta un proxy que intercepta trafico.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

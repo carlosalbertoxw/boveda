@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Hereda de AppCompat porque BiometricPrompt necesita ese linaje para su
+      dialogo de huella en API 26-27. El resto de la interfaz es Compose y
+      pinta sus propios colores.
+    -->
+    <style name="Theme.Boveda" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/fondo</item>
+    </style>
+</resources>
