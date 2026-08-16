@@ -127,25 +127,42 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
             return Importacion.Ok(entrantes.size, 0)
         }
 
-        // Al fusionar se omite lo que ya esta identico. Sin esto, importar dos
-        // veces el mismo archivo duplicaria la boveda entera, que es justo lo
-        // que uno hace cuando no esta seguro de si el respaldo entro.
-        val existentes = dao.listaCompleta()
-            .map { Triple(it.titulo, it.usuario, it.contrasena) }
-            .toHashSet()
+        val plan = Fusion.planifica(dao.listaCompleta(), entrantes)
+        plan.nuevas.forEach { dao.inserta(it) }
+        return Importacion.Ok(plan.nuevas.size, plan.omitidas)
+    }
 
-        var agregadas = 0
-        var omitidas = 0
-        entrantes.forEach { credencial ->
-            val huella = Triple(credencial.titulo, credencial.usuario, credencial.contrasena)
-            if (huella in existentes) {
-                omitidas++
-            } else {
-                dao.inserta(credencial)
-                existentes.add(huella)
-                agregadas++
+    /**
+     * Que entra y que se omite al fusionar un respaldo con lo que ya hay.
+     *
+     * Va aparte y sin tocar la base a proposito: es la unica regla del respaldo
+     * con criterio propio —cuando dos entradas son "la misma"— y asi se puede
+     * probar sola, sin levantar SQLCipher ni un dispositivo.
+     */
+    object Fusion {
+
+        data class Plan(val nuevas: List<Credencial>, val omitidas: Int)
+
+        /**
+         * Dos entradas son la misma si coinciden titulo, usuario y contrasena.
+         * Sin esta comprobacion, importar dos veces el mismo archivo duplicaria
+         * la boveda entera, que es justo lo que uno hace cuando no esta seguro
+         * de si el respaldo entro.
+         *
+         * Los duplicados dentro del propio archivo tambien cuentan: el segundo
+         * se omite igual que si ya estuviera en la boveda.
+         */
+        fun planifica(existentes: List<Credencial>, entrantes: List<Credencial>): Plan {
+            val vistas = existentes.mapTo(HashSet()) { huella(it) }
+            val nuevas = mutableListOf<Credencial>()
+            var omitidas = 0
+            entrantes.forEach { credencial ->
+                if (vistas.add(huella(credencial))) nuevas += credencial else omitidas++
             }
+            return Plan(nuevas, omitidas)
         }
-        return Importacion.Ok(agregadas, omitidas)
+
+        private fun huella(credencial: Credencial) =
+            Triple(credencial.titulo, credencial.usuario, credencial.contrasena)
     }
 }

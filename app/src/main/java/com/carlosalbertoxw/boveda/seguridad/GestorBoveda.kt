@@ -182,6 +182,14 @@ class GestorBoveda(
     } catch (e: Exception) {
         Sobre.borra(frase)
         Apertura.Falla(e.message ?: texto(R.string.aviso_no_se_pudo_abrir))
+    } catch (e: LinkageError) {
+        // System.loadLibrary("sqlcipher") no lanza una Exception sino un Error,
+        // que el catch de arriba no recoge. Si la libreria nativa no carga
+        // —instalacion a medias, ABI que no toca— sin esto la app se cae en vez
+        // de decir que no pudo abrir la boveda. Y caerse aqui es peor de lo
+        // normal: pasa en la pantalla de desbloqueo, sin ninguna explicacion.
+        Sobre.borra(frase)
+        Apertura.Falla(e.message ?: texto(R.string.aviso_no_se_pudo_abrir))
     }
 
     // --- Cierre ----------------------------------------------------------
@@ -287,12 +295,16 @@ class GestorBoveda(
      * solo tampoco basta, porque se reinicia al apagar el equipo.
      *
      * La clave esta en [restante]: ningun vencimiento puede pedir mas de lo que
-     * dura el castigo mas largo. Si pide mas, ese reloj se movio por debajo
-     * —reinicio, o fecha cambiada a mano— y su cuenta ya no significa nada, asi
-     * que se recorta. Eso acota la espera a [CASTIGO_MAXIMO] pase lo que pase:
-     * el fallo que dejaba al dueno fuera de su boveda durante dias deja de ser
-     * posible, y al atacante recortar no le regala nada, porque el castigo real
-     * nunca fue mas largo que ese tope.
+     * dura el castigo mas largo, porque nunca se anota uno mayor. Si al leerlo
+     * pide mas, es que ese reloj se movio por debajo —el telefono se reinicio,
+     * o alguien cambio la fecha— y su cuenta ya no significa nada, asi que se
+     * descarta y manda el otro, que si es coherente.
+     *
+     * De ahi salen las tres propiedades que se buscan, y que estan probadas en
+     * CandadoTest: reiniciar el telefono no alarga la espera (manda el reloj de
+     * pared, que sobrevive al apagon), adelantar la fecha no la saltea (manda
+     * el monotonico, que no se deja mover), y en ningun caso se puede pedir mas
+     * de [CASTIGO_MAXIMO] segundos.
      */
     fun segundosDeEspera(): Int = maxOf(
         restante(prefs.esperaMonotonicaHasta - reloj.monotonico()),
@@ -301,7 +313,8 @@ class GestorBoveda(
 
     private fun restante(milisegundos: Long): Int = when {
         milisegundos <= 0L -> 0
-        milisegundos > CASTIGO_MAXIMO * 1000L -> CASTIGO_MAXIMO
+        // Mas que el castigo mas largo posible: este reloj miente, no cuenta.
+        milisegundos > CASTIGO_MAXIMO * 1000L -> 0
         else -> ((milisegundos + 999) / 1000).toInt()
     }
 
