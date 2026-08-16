@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import com.carlosalbertoxw.boveda.AplicacionBoveda
+import com.carlosalbertoxw.boveda.R
 import com.carlosalbertoxw.boveda.datos.Credencial
 import com.carlosalbertoxw.boveda.seguridad.AlmacenBiometrico
 import com.carlosalbertoxw.boveda.seguridad.Apertura
@@ -150,7 +151,7 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
     }
 
     private fun reporta(resultado: Apertura) {
-        val texto = mensajeDe(resultado)
+        val texto = mensajeDe(getApplication(), resultado)
         if (texto == null) avisos.limpia() else avisos.muestra(texto)
     }
 
@@ -176,14 +177,14 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
             // registro una huella nueva en el telefono, que la invalida a
             // proposito. Queda la contrasena maestra.
             apagaHuella(avisar = false)
-            avisos.muestra("El atajo de huella se invalido. Usa tu contrasena maestra.")
+            avisos.muestra(texto(R.string.aviso_huella_invalidada))
             return
         }
         Biometria.pide(
             actividad = actividad,
             cifrador = cifrador,
-            titulo = "Abrir la boveda",
-            subtitulo = "Confirma tu identidad",
+            titulo = texto(R.string.huella_abrir_titulo),
+            subtitulo = texto(R.string.huella_abrir_subtitulo),
             alExito = { autenticado -> lanza { reporta(gestor.abreConBiometrico(autenticado)) } },
             alFallo = { avisos.muestra(it) }
         )
@@ -192,27 +193,29 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
     /** Envuelve la frase de la base con una llave nueva ligada a la huella. */
     fun activaHuella(actividad: FragmentActivity) {
         if (!Biometria.disponible(getApplication())) {
-            avisos.muestra("Este equipo no tiene biometria fuerte registrada.")
+            avisos.muestra(texto(R.string.aviso_huella_no_disponible))
             return
         }
         val cifrador = runCatching {
             AlmacenBiometrico.cifradorParaGuardar(getApplication())
         }.getOrNull()
         if (cifrador == null) {
-            avisos.muestra("No se pudo preparar la llave del equipo.")
+            avisos.muestra(texto(R.string.aviso_huella_sin_llave))
             return
         }
         Biometria.pide(
             actividad = actividad,
             cifrador = cifrador,
-            titulo = "Activar desbloqueo con huella",
-            subtitulo = "Confirma para guardar la llave",
+            titulo = texto(R.string.huella_activar_titulo),
+            subtitulo = texto(R.string.huella_activar_subtitulo),
             alExito = { autenticado ->
                 val ok = gestor.activaBiometrico(autenticado)
                 _huellaActiva.value = gestor.prefs.biometricoActivo
                 avisos.muestra(
-                    if (ok) "Desbloqueo con huella activado."
-                    else "No se pudo activar el desbloqueo con huella."
+                    texto(
+                        if (ok) R.string.aviso_huella_activada
+                        else R.string.aviso_huella_no_activada
+                    )
                 )
             },
             alFallo = {
@@ -225,7 +228,7 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
     fun apagaHuella(avisar: Boolean = true) {
         gestor.prefs.apagaBiometrico()
         _huellaActiva.value = false
-        if (avisar) avisos.muestra("Desbloqueo con huella desactivado.")
+        if (avisar) avisos.muestra(texto(R.string.aviso_huella_desactivada))
     }
 
     // --- Credenciales -----------------------------------------------------
@@ -248,7 +251,8 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
         val segundos = _segundosPortapapeles.value
         Portapapeles.copia(getApplication(), etiqueta, texto, aplicacion.alcance, segundos)
         avisos.muestra(
-            if (segundos > 0) "Copiado. Se borra del portapapeles en $segundos s." else "Copiado."
+            if (segundos > 0) texto(R.string.aviso_copiado_con_borrado, segundos)
+            else texto(R.string.aviso_copiado)
         )
     }
 
@@ -287,8 +291,10 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
         val n = nueva.toCharArray()
         try {
             avisos.muestra(
-                if (gestor.cambiaMaestra(a, n)) "Contrasena maestra actualizada."
-                else "La contrasena actual no es correcta."
+                texto(
+                    if (gestor.cambiaMaestra(a, n)) R.string.aviso_maestra_actualizada
+                    else R.string.aviso_maestra_incorrecta_actual
+                )
             )
         } finally {
             a.fill(' ')
@@ -304,13 +310,17 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
 
     // --- Plomeria ---------------------------------------------------------
 
+    /** Atajo para los textos: el modelo tambien habla, y habla en strings.xml. */
+    private fun texto(id: Int, vararg formato: Any): String =
+        getApplication<Application>().getString(id, *formato)
+
     private fun lanza(bloque: suspend () -> Unit) {
         viewModelScope.launch {
             _ocupado.value = true
             try {
                 bloque()
             } catch (e: Exception) {
-                avisos.muestra(e.message ?: "Algo salio mal.")
+                avisos.muestra(e.message ?: texto(R.string.aviso_generico))
             } finally {
                 _ocupado.value = false
             }

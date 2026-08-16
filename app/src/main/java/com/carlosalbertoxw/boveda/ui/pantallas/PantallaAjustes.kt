@@ -35,11 +35,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.carlosalbertoxw.boveda.R
 import com.carlosalbertoxw.boveda.datos.Respaldo
 import com.carlosalbertoxw.boveda.ui.ModeloBoveda
 import com.carlosalbertoxw.boveda.ui.ModeloRespaldo
@@ -78,10 +80,13 @@ fun PantallaAjustes(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ajustes") },
+                title = { Text(stringResource(R.string.ajustes_titulo)) },
                 navigationIcon = {
                     IconButton(onClick = alVolver) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.volver)
+                        )
                     }
                 }
             )
@@ -95,32 +100,43 @@ fun PantallaAjustes(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Seccion("Cierre automatico", "Cuanto aguanta abierta la boveda sin que la uses.") {
+            Seccion(
+                stringResource(R.string.ajustes_cierre_titulo),
+                stringResource(R.string.ajustes_cierre_explicacion)
+            ) {
                 Opciones(
-                    opciones = listOf(0 to "Al instante", 1 to "1 min", 5 to "5 min", 15 to "15 min"),
+                    opciones = listOf(
+                        0 to stringResource(R.string.ajustes_cierre_instante),
+                        1 to stringResource(R.string.ajustes_cierre_1),
+                        5 to stringResource(R.string.ajustes_cierre_5),
+                        15 to stringResource(R.string.ajustes_cierre_15)
+                    ),
                     elegida = autobloqueo,
                     alElegir = modelo::cambiaAutobloqueo
                 )
             }
 
             Seccion(
-                "Borrado del portapapeles",
-                "Tiempo antes de limpiar lo que copias. El portapapeles es compartido " +
-                    "con todo el sistema: cuanto menos dure ahi una contrasena, mejor."
+                stringResource(R.string.ajustes_portapapeles_titulo),
+                stringResource(R.string.ajustes_portapapeles_explicacion)
             ) {
                 Opciones(
-                    opciones = listOf(0 to "No borrar", 15 to "15 s", 30 to "30 s", 60 to "60 s"),
+                    opciones = listOf(
+                        0 to stringResource(R.string.ajustes_portapapeles_nunca),
+                        15 to stringResource(R.string.ajustes_portapapeles_15),
+                        30 to stringResource(R.string.ajustes_portapapeles_30),
+                        60 to stringResource(R.string.ajustes_portapapeles_60)
+                    ),
                     elegida = portapapeles,
                     alElegir = modelo::cambiaSegundosPortapapeles
                 )
             }
 
             Seccion(
-                "Desbloqueo con huella",
-                "Atajo para no teclear la maestra. La llave vive en el chip seguro del " +
-                    "telefono y se destruye sola si se registra una huella nueva."
+                stringResource(R.string.ajustes_huella_titulo),
+                stringResource(R.string.ajustes_huella_explicacion)
             ) {
-                Interruptor("Activado", huella) { activar ->
+                Interruptor(stringResource(R.string.ajustes_activado), huella) { activar ->
                     when {
                         !activar -> modelo.apagaHuella()
                         actividad != null -> modelo.activaHuella(actividad)
@@ -129,13 +145,15 @@ fun PantallaAjustes(
             }
 
             Seccion(
-                "Borrar tras intentos fallidos",
-                "Destruye la boveda al llegar a ese numero de contrasenas erroneas " +
-                    "seguidas. Protege ante un telefono perdido; usalo solo si tienes " +
-                    "tus datos anotados en otro lado."
+                stringResource(R.string.ajustes_borrado_titulo),
+                stringResource(R.string.ajustes_borrado_explicacion)
             ) {
                 Opciones(
-                    opciones = listOf(0 to "Nunca", 10 to "10", 20 to "20"),
+                    opciones = listOf(
+                        0 to stringResource(R.string.ajustes_borrado_nunca),
+                        10 to stringResource(R.string.ajustes_borrado_10),
+                        20 to stringResource(R.string.ajustes_borrado_20)
+                    ),
                     elegida = borrarTras,
                     alElegir = modelo::cambiaBorrarTrasFallos
                 )
@@ -144,12 +162,11 @@ fun PantallaAjustes(
             OutlinedButton(
                 onClick = { cambiandoMaestra = true },
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Cambiar contrasena maestra") }
+            ) { Text(stringResource(R.string.ajustes_cambiar_maestra)) }
 
             Seccion(
-                "Respaldo",
-                "Un archivo cifrado con su propia contrasena, para no perder la boveda " +
-                    "si pierdes el telefono. Guardalo donde puedas recuperarlo despues."
+                stringResource(R.string.ajustes_respaldo_titulo),
+                stringResource(R.string.ajustes_respaldo_explicacion)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
@@ -161,7 +178,7 @@ fun PantallaAjustes(
                             abreCreador.launch(Respaldo.nombreSugerido())
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Exportar respaldo cifrado") }
+                    ) { Text(stringResource(R.string.ajustes_exportar)) }
 
                     OutlinedButton(
                         onClick = {
@@ -172,7 +189,7 @@ fun PantallaAjustes(
                             abreLector.launch(arrayOf("*/*"))
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Importar respaldo") }
+                    ) { Text(stringResource(R.string.ajustes_importar)) }
                 }
             }
 
@@ -183,27 +200,28 @@ fun PantallaAjustes(
             ) {
                 Column(Modifier.padding(16.dp)) {
                     Text(
-                        "Borrar la boveda",
+                        stringResource(R.string.ajustes_borrar_titulo),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Elimina todas las entradas, la contrasena maestra y la llave del " +
-                            "equipo. No hay copia en ningun lado, asi que no se puede deshacer.",
+                        stringResource(R.string.ajustes_borrar_explicacion),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
                     Spacer(Modifier.height(8.dp))
                     TextButton(onClick = { confirmandoBorrado = true }) {
-                        Text("Borrar todo", color = MaterialTheme.colorScheme.error)
+                        Text(
+                            stringResource(R.string.ajustes_borrar_boton),
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
             }
 
             Text(
-                "Esta app no tiene permiso de internet. No hay sincronizacion, ni copia en " +
-                    "la nube, ni telemetria: lo que guardas vive solo en este telefono.",
+                stringResource(R.string.ajustes_sin_internet),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -297,21 +315,20 @@ private fun DialogoCambioMaestra(
 
     DialogoSeguro(
         alCerrar = alCerrar,
-        titulo = { Text("Cambiar contrasena maestra") },
+        titulo = { Text(stringResource(R.string.ajustes_cambiar_maestra)) },
         contenido = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                CampoSecreto(actual, { actual = it }, "Contrasena actual")
-                CampoSecreto(nueva, { nueva = it }, "Nueva contrasena")
+                CampoSecreto(actual, { actual = it }, stringResource(R.string.cambio_actual))
+                CampoSecreto(nueva, { nueva = it }, stringResource(R.string.cambio_nueva))
                 MedidorFuerza(nueva)
                 CampoSecreto(
                     valor = repetida,
                     alCambiar = { repetida = it },
-                    etiqueta = "Repite la nueva",
+                    etiqueta = stringResource(R.string.cambio_repite),
                     imeAction = ImeAction.Done
                 )
                 Text(
-                    "Tus entradas no se vuelven a cifrar: lo que cambia es la llave que " +
-                        "protege la boveda, asi que el cambio es inmediato.",
+                    stringResource(R.string.cambio_explicacion),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -319,10 +336,12 @@ private fun DialogoCambioMaestra(
         },
         botonConfirmar = {
             TextButton(onClick = { alConfirmar(actual, nueva) }, enabled = valida) {
-                Text("Cambiar")
+                Text(stringResource(R.string.cambio_confirmar))
             }
         },
-        botonCancelar = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
+        botonCancelar = {
+            TextButton(onClick = alCerrar) { Text(stringResource(R.string.cancelar)) }
+        }
     )
 }
 
@@ -339,41 +358,44 @@ private fun DialogoExportar(
 
     DialogoSeguro(
         alCerrar = alCerrar,
-        titulo = { Text("Exportar respaldo") },
+        titulo = { Text(stringResource(R.string.exportar_titulo)) },
         contenido = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    "Sacar todas tus contrasenas de la boveda es la operacion mas " +
-                        "delicada de la app, asi que se pide la maestra otra vez.",
+                    stringResource(R.string.exportar_explicacion_maestra),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                CampoSecreto(maestra, { maestra = it }, "Contrasena maestra")
+                CampoSecreto(
+                    maestra,
+                    { maestra = it },
+                    stringResource(R.string.contrasena_maestra)
+                )
 
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "El archivo lleva su propia contrasena. Puede ser la misma maestra, " +
-                        "pero si algun dia la cambias, los respaldos viejos seguiran " +
-                        "abriendose con la de entonces.",
+                    stringResource(R.string.exportar_explicacion_archivo),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                CampoSecreto(clave, { clave = it }, "Contrasena del archivo")
+                CampoSecreto(clave, { clave = it }, stringResource(R.string.exportar_clave_archivo))
                 MedidorFuerza(clave)
                 CampoSecreto(
                     valor = repetida,
                     alCambiar = { repetida = it },
-                    etiqueta = "Repite la del archivo",
+                    etiqueta = stringResource(R.string.exportar_repite_archivo),
                     imeAction = ImeAction.Done
                 )
             }
         },
         botonConfirmar = {
             TextButton(onClick = { alConfirmar(maestra, clave) }, enabled = valida) {
-                Text("Exportar")
+                Text(stringResource(R.string.exportar_confirmar))
             }
         },
-        botonCancelar = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
+        botonCancelar = {
+            TextButton(onClick = alCerrar) { Text(stringResource(R.string.cancelar)) }
+        }
     )
 }
 
@@ -387,22 +409,23 @@ private fun DialogoImportar(
 
     DialogoSeguro(
         alCerrar = alCerrar,
-        titulo = { Text("Importar respaldo") },
+        titulo = { Text(stringResource(R.string.importar_titulo)) },
         contenido = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CampoSecreto(
                     valor = clave,
                     alCambiar = { clave = it },
-                    etiqueta = "Contrasena del archivo",
+                    etiqueta = stringResource(R.string.importar_clave),
                     imeAction = ImeAction.Done
                 )
-                Interruptor("Reemplazar todo lo que tengo", reemplazar) { reemplazar = it }
+                Interruptor(stringResource(R.string.importar_reemplazar), reemplazar) {
+                    reemplazar = it
+                }
                 Text(
-                    if (reemplazar) {
-                        "Se borran las entradas actuales y quedan solo las del archivo."
-                    } else {
-                        "Se agregan al final. Lo que ya este identico no se duplica."
-                    },
+                    stringResource(
+                        if (reemplazar) R.string.importar_explicacion_reemplazar
+                        else R.string.importar_explicacion_fusionar
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -410,10 +433,12 @@ private fun DialogoImportar(
         },
         botonConfirmar = {
             TextButton(onClick = { alConfirmar(clave, reemplazar) }, enabled = clave.isNotEmpty()) {
-                Text("Importar")
+                Text(stringResource(R.string.importar_confirmar))
             }
         },
-        botonCancelar = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
+        botonCancelar = {
+            TextButton(onClick = alCerrar) { Text(stringResource(R.string.cancelar)) }
+        }
     )
 }
 
@@ -422,28 +447,34 @@ private fun DialogoBorradoTotal(alConfirmar: () -> Unit, alCerrar: () -> Unit) {
     var escrito by remember { mutableStateOf("") }
     // Se pide teclear la palabra: un borrado irreversible no puede quedar a un
     // solo toque de distancia.
-    val confirmado = escrito.trim().equals("BORRAR", ignoreCase = false)
+    val palabra = stringResource(R.string.borrado_palabra)
+    val confirmado = escrito.trim() == palabra
 
     DialogoSeguro(
         alCerrar = alCerrar,
-        titulo = { Text("Borrar la boveda") },
+        titulo = { Text(stringResource(R.string.ajustes_borrar_titulo)) },
         contenido = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Se perderan todas las entradas. Escribe BORRAR para confirmar.")
+                Text(stringResource(R.string.borrado_instruccion))
                 OutlinedTextField(
                     value = escrito,
                     onValueChange = { escrito = it },
                     singleLine = true,
-                    label = { Text("BORRAR") },
+                    label = { Text(palabra) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         },
         botonConfirmar = {
             TextButton(onClick = alConfirmar, enabled = confirmado) {
-                Text("Borrar todo", color = MaterialTheme.colorScheme.error)
+                Text(
+                    stringResource(R.string.ajustes_borrar_boton),
+                    color = MaterialTheme.colorScheme.error
+                )
             }
         },
-        botonCancelar = { TextButton(onClick = alCerrar) { Text("Cancelar") } }
+        botonCancelar = {
+            TextButton(onClick = alCerrar) { Text(stringResource(R.string.cancelar)) }
+        }
     )
 }

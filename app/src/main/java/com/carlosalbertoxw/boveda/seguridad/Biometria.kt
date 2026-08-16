@@ -5,6 +5,7 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import com.carlosalbertoxw.boveda.R
 import javax.crypto.Cipher
 
 /**
@@ -42,7 +43,7 @@ object Biometria {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(resultado: BiometricPrompt.AuthenticationResult) {
                     val autenticado = resultado.cryptoObject?.cipher
-                    if (autenticado == null) alFallo("El sistema no devolvio la llave.")
+                    if (autenticado == null) alFallo(actividad.getString(R.string.aviso_biometria_sin_llave))
                     else alExito(autenticado)
                 }
 
@@ -60,7 +61,7 @@ object Biometria {
         val info = BiometricPrompt.PromptInfo.Builder()
             .setTitle(titulo)
             .setSubtitle(subtitulo)
-            .setNegativeButtonText("Usar contrasena")
+            .setNegativeButtonText(actividad.getString(R.string.huella_usar_contrasena))
             .setAllowedAuthenticators(TIPO)
             .setConfirmationRequired(false)
             .build()

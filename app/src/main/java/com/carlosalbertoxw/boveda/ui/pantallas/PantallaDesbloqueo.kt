@@ -25,10 +25,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.carlosalbertoxw.boveda.R
 import com.carlosalbertoxw.boveda.ui.ModeloBoveda
 
 @Composable
@@ -68,14 +70,17 @@ fun PantallaDesbloqueo(modelo: ModeloBoveda) {
             tint = MaterialTheme.colorScheme.primary
         )
         Spacer(Modifier.height(16.dp))
-        Text("Boveda cerrada", style = MaterialTheme.typography.headlineSmall)
+        Text(
+            stringResource(R.string.desbloqueo_titulo),
+            style = MaterialTheme.typography.headlineSmall
+        )
 
         Spacer(Modifier.height(32.dp))
 
         CampoSecreto(
             valor = contrasena,
             alCambiar = { contrasena = it },
-            etiqueta = "Contrasena maestra",
+            etiqueta = stringResource(R.string.contrasena_maestra),
             imeAction = ImeAction.Go,
             alEnviar = { if (espera == 0 && !ocupado) modelo.abre(contrasena) }
         )
@@ -89,9 +94,9 @@ fun PantallaDesbloqueo(modelo: ModeloBoveda) {
         ) {
             Text(
                 when {
-                    espera > 0 -> "Espera $espera s"
-                    ocupado -> "Abriendo..."
-                    else -> "Abrir"
+                    espera > 0 -> stringResource(R.string.desbloqueo_espera, espera)
+                    ocupado -> stringResource(R.string.desbloqueo_abriendo)
+                    else -> stringResource(R.string.desbloqueo_abrir)
                 }
             )
         }
@@ -105,14 +110,13 @@ fun PantallaDesbloqueo(modelo: ModeloBoveda) {
             ) {
                 Icon(Icons.Filled.Fingerprint, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
-                Text("Usar huella")
+                Text(stringResource(R.string.desbloqueo_usar_huella))
             }
         }
 
         Spacer(Modifier.height(24.dp))
         Text(
-            "Descifrar la boveda tarda un momento a proposito: cada intento cuesta " +
-                "el mismo trabajo, y eso es lo que hace inviable probar contrasenas en serie.",
+            stringResource(R.string.desbloqueo_explicacion),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

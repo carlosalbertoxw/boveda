@@ -1,5 +1,7 @@
 package com.carlosalbertoxw.boveda.ui
 
+import android.content.Context
+import com.carlosalbertoxw.boveda.R
 import com.carlosalbertoxw.boveda.datos.GestorRespaldo
 import com.carlosalbertoxw.boveda.seguridad.Apertura
 
@@ -8,43 +10,52 @@ import com.carlosalbertoxw.boveda.seguridad.Apertura
  *
  * Estaba metido en los `when` del modelo de vista, mezclado con la
  * orquestacion. Separado se lee de un vistazo si un mensaje es claro, se puede
- * probar sin levantar nada, y el dia que los textos se muevan a strings.xml hay
- * un solo archivo que tocar.
+ * probar sin levantar nada, y los textos salen de strings.xml en vez de estar
+ * incrustados a mitad de un cuando.
  *
  * Ninguno de estos textos distingue "contrasena mala" de "archivo manipulado":
  * en AES-GCM las dos cosas fallan igual y esta bien que asi sea.
  */
 
-fun mensajeDe(resultado: Apertura): String? = when (resultado) {
+fun mensajeDe(contexto: Context, resultado: Apertura): String? = when (resultado) {
     is Apertura.Ok -> null
     is Apertura.Incorrecta ->
         if (resultado.esperaSegundos > 0) {
-            "Contrasena incorrecta. Espera ${resultado.esperaSegundos} s antes de reintentar."
+            contexto.getString(R.string.aviso_incorrecta_espera, resultado.esperaSegundos)
         } else {
-            "Contrasena incorrecta. Intento ${resultado.fallos}."
+            contexto.getString(R.string.aviso_incorrecta, resultado.fallos)
         }
-    is Apertura.EnEspera -> "Demasiados intentos. Espera ${resultado.segundos} s."
-    is Apertura.Borrada -> "Se alcanzo el limite de intentos: la boveda se borro."
+    is Apertura.EnEspera -> contexto.getString(R.string.aviso_en_espera, resultado.segundos)
+    is Apertura.Borrada -> contexto.getString(R.string.aviso_borrada)
     is Apertura.Falla -> resultado.mensaje
 }
 
-fun mensajeDe(resultado: GestorRespaldo.Exportacion): String = when (resultado) {
-    is GestorRespaldo.Exportacion.Ok -> "Respaldo creado con ${resultado.entradas} entradas."
-    is GestorRespaldo.Exportacion.MaestraIncorrecta -> "La contrasena maestra no es correcta."
-    is GestorRespaldo.Exportacion.BovedaCerrada -> "La boveda se cerro antes de terminar."
+fun mensajeDe(contexto: Context, resultado: GestorRespaldo.Exportacion): String = when (resultado) {
+    is GestorRespaldo.Exportacion.Ok ->
+        contexto.getString(R.string.aviso_respaldo_creado, resultado.entradas)
+    is GestorRespaldo.Exportacion.MaestraIncorrecta ->
+        contexto.getString(R.string.aviso_respaldo_maestra_incorrecta)
+    is GestorRespaldo.Exportacion.BovedaCerrada ->
+        contexto.getString(R.string.aviso_respaldo_boveda_cerrada)
     is GestorRespaldo.Exportacion.Falla -> resultado.mensaje
 }
 
-fun mensajeDe(resultado: GestorRespaldo.Importacion): String = when (resultado) {
+fun mensajeDe(contexto: Context, resultado: GestorRespaldo.Importacion): String = when (resultado) {
     is GestorRespaldo.Importacion.Ok ->
         if (resultado.omitidas > 0) {
-            "Importadas ${resultado.agregadas}. Se omitieron ${resultado.omitidas} que ya estaban."
+            contexto.getString(
+                R.string.aviso_importadas_con_omitidas,
+                resultado.agregadas,
+                resultado.omitidas
+            )
         } else {
-            "Importadas ${resultado.agregadas} entradas."
+            contexto.getString(R.string.aviso_importadas, resultado.agregadas)
         }
     is GestorRespaldo.Importacion.ContrasenaIncorrecta ->
-        "La contrasena del archivo no es correcta, o el archivo fue alterado."
-    is GestorRespaldo.Importacion.NoEsUnRespaldo -> "Ese archivo no es un respaldo de Boveda."
-    is GestorRespaldo.Importacion.BovedaCerrada -> "La boveda se cerro antes de terminar."
+        contexto.getString(R.string.aviso_importar_clave_incorrecta)
+    is GestorRespaldo.Importacion.NoEsUnRespaldo ->
+        contexto.getString(R.string.aviso_importar_no_es_respaldo)
+    is GestorRespaldo.Importacion.BovedaCerrada ->
+        contexto.getString(R.string.aviso_respaldo_boveda_cerrada)
     is GestorRespaldo.Importacion.Falla -> resultado.mensaje
 }

@@ -1,6 +1,7 @@
 package com.carlosalbertoxw.boveda.seguridad
 
 import android.content.Context
+import com.carlosalbertoxw.boveda.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -100,9 +101,9 @@ class GestorBoveda(
         val espera = segundosDeEspera()
         if (espera > 0) return@withContext Apertura.EnEspera(espera)
 
-        val sal = prefs.sal ?: return@withContext Apertura.Falla("La boveda no esta configurada.")
+        val sal = prefs.sal ?: return@withContext Apertura.Falla(texto(R.string.error_no_configurada))
         val sobre = prefs.sobreMaestra
-            ?: return@withContext Apertura.Falla("La boveda no esta configurada.")
+            ?: return@withContext Apertura.Falla(texto(R.string.error_no_configurada))
 
         val kek = Kdf.deriva(maestra, sal, prefs.iteraciones)
         val frase = try {
@@ -149,13 +150,13 @@ class GestorBoveda(
     suspend fun abreConBiometrico(cifradorAutenticado: Cipher): Apertura =
         withContext(Dispatchers.IO) {
             val sobre = prefs.sobreBiometrico
-                ?: return@withContext Apertura.Falla("El atajo no esta activo.")
+                ?: return@withContext Apertura.Falla(texto(R.string.error_atajo_inactivo))
             val frase = try {
                 cifradorAutenticado.doFinal(sobre, Sobre.BYTES_IV, sobre.size - Sobre.BYTES_IV)
             } catch (_: GeneralSecurityException) {
                 prefs.apagaBiometrico()
                 return@withContext Apertura.Falla(
-                    "El atajo dejo de ser valido. Usa tu contrasena maestra."
+                    texto(R.string.error_atajo_invalido)
                 )
             }
             prefs.fallosSeguidos = 0
@@ -180,7 +181,7 @@ class GestorBoveda(
         Apertura.Ok
     } catch (e: Exception) {
         Sobre.borra(frase)
-        Apertura.Falla(e.message ?: "No se pudo abrir la boveda.")
+        Apertura.Falla(e.message ?: texto(R.string.aviso_no_se_pudo_abrir))
     }
 
     // --- Cierre ----------------------------------------------------------
@@ -334,6 +335,8 @@ class GestorBoveda(
         fallos >= 9 -> CASTIGO_MAXIMO
         else -> 15 shl (fallos - 4)
     }
+
+    private fun texto(id: Int): String = app.getString(id)
 
     private fun aHex(bytes: ByteArray): String =
         bytes.joinToString("") { "%02x".format(it) }

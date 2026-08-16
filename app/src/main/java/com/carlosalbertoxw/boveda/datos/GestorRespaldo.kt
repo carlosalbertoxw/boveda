@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import com.carlosalbertoxw.boveda.seguridad.EstadoBoveda
 import com.carlosalbertoxw.boveda.seguridad.GestorBoveda
 import java.io.IOException
+import com.carlosalbertoxw.boveda.R
 
 /**
  * Exportar e importar el respaldo.
@@ -58,11 +59,11 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
 
         try {
             app.contentResolver.openOutputStream(destino, "wt")?.use { it.write(archivo) }
-                ?: return@withContext Exportacion.Falla("No se pudo escribir en ese destino.")
+                ?: return@withContext Exportacion.Falla(texto(R.string.error_destino_no_escribible))
         } catch (e: IOException) {
-            return@withContext Exportacion.Falla(e.message ?: "No se pudo escribir el archivo.")
+            return@withContext Exportacion.Falla(e.message ?: texto(R.string.error_escribir_archivo))
         } catch (e: SecurityException) {
-            return@withContext Exportacion.Falla("Sin permiso para escribir ahi.")
+            return@withContext Exportacion.Falla(texto(R.string.error_sin_permiso_escritura))
         }
 
         Exportacion.Ok(credenciales.size)
@@ -85,26 +86,33 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
                 // mostrar el mensaje que explica el problema.
                 val leido = flujo.readNBytes(limiteBytes + 1)
                 if (leido.size > limiteBytes) {
-                    return@withContext Importacion.Falla("El archivo es demasiado grande.")
+                    return@withContext Importacion.Falla(texto(R.string.error_archivo_grande))
                 }
                 leido
-            } ?: return@withContext Importacion.Falla("No se pudo leer ese archivo.")
+            } ?: return@withContext Importacion.Falla(texto(R.string.error_leer_archivo))
         } catch (e: IOException) {
-            return@withContext Importacion.Falla(e.message ?: "No se pudo leer el archivo.")
+            return@withContext Importacion.Falla(e.message ?: texto(R.string.error_leer_archivo))
         } catch (e: SecurityException) {
-            return@withContext Importacion.Falla("Sin permiso para leer ahi.")
+            return@withContext Importacion.Falla(texto(R.string.error_sin_permiso_lectura))
         }
 
         when (val lectura = Respaldo.lee(bytes, contrasenaArchivo)) {
             is Respaldo.Lectura.ContrasenaIncorrecta -> Importacion.ContrasenaIncorrecta
             is Respaldo.Lectura.NoEsUnRespaldo -> Importacion.NoEsUnRespaldo
-            is Respaldo.Lectura.VersionNoSoportada ->
-                Importacion.Falla("El archivo es de la version ${lectura.version} y esta app lee la ${Respaldo.VERSION}.")
+            is Respaldo.Lectura.VersionNoSoportada -> Importacion.Falla(
+                app.getString(
+                    R.string.error_version_no_soportada,
+                    lectura.version,
+                    Respaldo.VERSION
+                )
+            )
             is Respaldo.Lectura.Corrupto ->
-                Importacion.Falla("El respaldo esta danado: ${lectura.detalle}.")
+                Importacion.Falla(app.getString(R.string.error_respaldo_danado, lectura.detalle))
             is Respaldo.Lectura.Ok -> vuelca(db, lectura.credenciales, reemplazar)
         }
     }
+
+    private fun texto(id: Int): String = app.getString(id)
 
     private suspend fun vuelca(
         db: BovedaDatabase,

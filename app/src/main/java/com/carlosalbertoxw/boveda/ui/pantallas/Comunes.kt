@@ -32,7 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogWindowProvider
+import com.carlosalbertoxw.boveda.R
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -123,7 +125,9 @@ fun CampoSecreto(
             IconButton(onClick = { visible = !visible }) {
                 Icon(
                     imageVector = if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                    contentDescription = if (visible) "Ocultar" else "Mostrar"
+                    contentDescription = stringResource(
+                        if (visible) R.string.ocultar else R.string.mostrar
+                    )
                 )
             }
         },
@@ -139,12 +143,12 @@ fun CampoSecreto(
 @Composable
 fun MedidorFuerza(contrasena: String, modifier: Modifier = Modifier) {
     val bits = remember(contrasena) { Kdf.fuerza(contrasena) }
-    val (texto, color) = when {
-        contrasena.isEmpty() -> "" to Color.Gray
-        bits < 45 -> "Debil: se rompe en horas" to Color(0xFFE2564E)
-        bits < 70 -> "Aceptable" to Color(0xFFF0B44C)
-        bits < 100 -> "Fuerte" to Color(0xFF4CAF50)
-        else -> "Excelente" to Color(0xFF4CAF50)
+    val (etiqueta, color) = when {
+        contrasena.isEmpty() -> null to Color.Gray
+        bits < 45 -> R.string.fuerza_debil to Color(0xFFE2564E)
+        bits < 70 -> R.string.fuerza_aceptable to Color(0xFFF0B44C)
+        bits < 100 -> R.string.fuerza_fuerte to Color(0xFF4CAF50)
+        else -> R.string.fuerza_excelente to Color(0xFF4CAF50)
     }
 
     Column(modifier.fillMaxWidth()) {
@@ -153,10 +157,10 @@ fun MedidorFuerza(contrasena: String, modifier: Modifier = Modifier) {
             color = color,
             modifier = Modifier.fillMaxWidth()
         )
-        if (texto.isNotEmpty()) {
+        if (etiqueta != null) {
             Spacer(Modifier.height(4.dp))
             Text(
-                "$texto · ~$bits bits",
+                stringResource(R.string.fuerza_bits, stringResource(etiqueta), bits),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -182,7 +186,7 @@ fun DialogoGenerador(alElegir: (String) -> Unit, alCerrar: () -> Unit) {
 
     DialogoSeguro(
         alCerrar = alCerrar,
-        titulo = { Text("Generar contrasena") },
+        titulo = { Text(stringResource(R.string.generador_titulo)) },
         contenido = {
             Column {
                 Text(
@@ -194,7 +198,7 @@ fun DialogoGenerador(alElegir: (String) -> Unit, alCerrar: () -> Unit) {
                 MedidorFuerza(propuesta)
                 Spacer(Modifier.height(16.dp))
 
-                Text("Largo: ${largo.toInt()}")
+                Text(stringResource(R.string.generador_largo, largo.toInt()))
                 Slider(
                     value = largo,
                     onValueChange = { largo = it },
@@ -202,21 +206,25 @@ fun DialogoGenerador(alElegir: (String) -> Unit, alCerrar: () -> Unit) {
                     steps = 55
                 )
 
-                Interruptor("Mayusculas", mayusculas) { mayusculas = it }
-                Interruptor("Digitos", digitos) { digitos = it }
-                Interruptor("Simbolos", simbolos) { simbolos = it }
+                Interruptor(stringResource(R.string.generador_mayusculas), mayusculas) {
+                    mayusculas = it
+                }
+                Interruptor(stringResource(R.string.generador_digitos), digitos) { digitos = it }
+                Interruptor(stringResource(R.string.generador_simbolos), simbolos) { simbolos = it }
 
                 Spacer(Modifier.height(8.dp))
                 TextButton(onClick = { propuesta = Generador.genera(ajustes) }) {
-                    Text("Generar otra")
+                    Text(stringResource(R.string.generador_otra))
                 }
             }
         },
         botonConfirmar = {
-            TextButton(onClick = { alElegir(propuesta); alCerrar() }) { Text("Usar") }
+            TextButton(onClick = { alElegir(propuesta); alCerrar() }) {
+                Text(stringResource(R.string.generador_usar))
+            }
         },
         botonCancelar = {
-            TextButton(onClick = alCerrar) { Text("Cancelar") }
+            TextButton(onClick = alCerrar) { Text(stringResource(R.string.cancelar)) }
         }
     )
 }

@@ -19,9 +19,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.carlosalbertoxw.boveda.R
 import com.carlosalbertoxw.boveda.ui.ModeloBoveda
 
 private const val LARGO_MINIMO = 10
@@ -42,10 +44,10 @@ fun PantallaAlta(modelo: ModeloBoveda) {
             .verticalScroll(rememberScrollState())
             .padding(24.dp)
     ) {
-        Text("Crea tu contrasena maestra", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.alta_titulo), style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Es la unica llave de la boveda. Todo lo que guardes se cifra con ella.",
+            stringResource(R.string.alta_explicacion),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -55,7 +57,7 @@ fun PantallaAlta(modelo: ModeloBoveda) {
         CampoSecreto(
             valor = contrasena,
             alCambiar = { contrasena = it },
-            etiqueta = "Contrasena maestra"
+            etiqueta = stringResource(R.string.contrasena_maestra)
         )
         Spacer(Modifier.height(8.dp))
         MedidorFuerza(contrasena)
@@ -65,7 +67,7 @@ fun PantallaAlta(modelo: ModeloBoveda) {
         CampoSecreto(
             valor = confirmacion,
             alCambiar = { confirmacion = it },
-            etiqueta = "Repitela",
+            etiqueta = stringResource(R.string.alta_repite),
             imeAction = ImeAction.Done,
             alEnviar = { if (puedeCrear) modelo.crea(contrasena) }
         )
@@ -73,9 +75,9 @@ fun PantallaAlta(modelo: ModeloBoveda) {
         Spacer(Modifier.height(8.dp))
         when {
             !suficiente && contrasena.isNotEmpty() ->
-                Aviso("Usa al menos $LARGO_MINIMO caracteres.")
+                Aviso(stringResource(R.string.alta_muy_corta, LARGO_MINIMO))
             confirmacion.isNotEmpty() && !coincide ->
-                Aviso("Las dos contrasenas no coinciden.")
+                Aviso(stringResource(R.string.alta_no_coinciden))
         }
 
         Spacer(Modifier.height(24.dp))
@@ -87,16 +89,13 @@ fun PantallaAlta(modelo: ModeloBoveda) {
         ) {
             Column(Modifier.padding(16.dp)) {
                 Text(
-                    "No hay forma de recuperarla",
+                    stringResource(R.string.alta_sin_recuperacion_titulo),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Esta app no guarda tu contrasena maestra en ningun lado ni la manda " +
-                        "a ningun servidor: por eso nadie mas puede leer tu boveda. La otra " +
-                        "cara de esa moneda es que si la olvidas, los datos se pierden. " +
-                        "Apuntala en un lugar fisico seguro.",
+                    stringResource(R.string.alta_sin_recuperacion),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -110,7 +109,7 @@ fun PantallaAlta(modelo: ModeloBoveda) {
             enabled = puedeCrear,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (ocupado) "Creando..." else "Crear boveda")
+            Text(stringResource(if (ocupado) R.string.alta_creando else R.string.alta_crear))
         }
     }
 }

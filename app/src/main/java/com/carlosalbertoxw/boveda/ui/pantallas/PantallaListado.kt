@@ -28,9 +28,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.carlosalbertoxw.boveda.R
 import com.carlosalbertoxw.boveda.ui.ModeloBoveda
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,20 +49,29 @@ fun PantallaListado(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Boveda") },
+                title = { Text(stringResource(R.string.nombre_app)) },
                 actions = {
                     IconButton(onClick = { modelo.bloquea() }) {
-                        Icon(Icons.Filled.Lock, contentDescription = "Cerrar boveda")
+                        Icon(
+                            Icons.Filled.Lock,
+                            contentDescription = stringResource(R.string.listado_cerrar_boveda)
+                        )
                     }
                     IconButton(onClick = alAjustes) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Ajustes")
+                        Icon(
+                            Icons.Filled.Settings,
+                            contentDescription = stringResource(R.string.listado_ajustes)
+                        )
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = alCrear) {
-                Icon(Icons.Filled.Add, contentDescription = "Nueva entrada")
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.listado_nueva_entrada)
+                )
             }
         }
     ) { relleno ->
@@ -68,7 +79,7 @@ fun PantallaListado(
             OutlinedTextField(
                 value = busqueda,
                 onValueChange = modelo::busca,
-                label = { Text("Buscar") },
+                label = { Text(stringResource(R.string.listado_buscar)) },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
@@ -81,13 +92,13 @@ fun PantallaListado(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        if (busqueda.isBlank()) "La boveda esta vacia"
-                        else "Sin resultados para \"$busqueda\"",
+                        if (busqueda.isBlank()) stringResource(R.string.listado_vacio)
+                        else stringResource(R.string.listado_sin_resultados, busqueda),
                         style = MaterialTheme.typography.titleMedium
                     )
                     if (busqueda.isBlank()) {
                         Text(
-                            "Toca + para guardar tu primera contrasena.",
+                            stringResource(R.string.listado_vacio_ayuda),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

@@ -1,4 +1,208 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Todos los textos que ve el usuario viven aquí, y aquí sí se escriben con
+  tildes. El código (comentarios e identificadores) va sin acentos por
+  convención del proyecto; la interfaz no tiene por qué heredar esa convención,
+  y arrastrarla se veía en pantalla como "Contrasena maestra".
+-->
 <resources>
     <string name="nombre_app">Bóveda</string>
+
+    <!-- Comunes -->
+    <string name="mostrar">Mostrar</string>
+    <string name="ocultar">Ocultar</string>
+    <string name="copiar">Copiar</string>
+    <string name="copiar_campo">Copiar %1$s</string>
+    <string name="volver">Volver</string>
+    <string name="cancelar">Cancelar</string>
+    <string name="guardar">Guardar</string>
+    <string name="eliminar">Eliminar</string>
+    <string name="contrasena_maestra">Contraseña maestra</string>
+
+    <!-- Medidor de fuerza -->
+    <string name="fuerza_debil">Débil: se rompe en horas</string>
+    <string name="fuerza_aceptable">Aceptable</string>
+    <string name="fuerza_fuerte">Fuerte</string>
+    <string name="fuerza_excelente">Excelente</string>
+    <string name="fuerza_bits">%1$s · ~%2$d bits</string>
+
+    <!-- Generador -->
+    <string name="generador_titulo">Generar contraseña</string>
+    <string name="generador_largo">Largo: %1$d</string>
+    <string name="generador_mayusculas">Mayúsculas</string>
+    <string name="generador_digitos">Dígitos</string>
+    <string name="generador_simbolos">Símbolos</string>
+    <string name="generador_otra">Generar otra</string>
+    <string name="generador_usar">Usar</string>
+
+    <!-- Alta -->
+    <string name="alta_titulo">Crea tu contraseña maestra</string>
+    <string name="alta_explicacion">Es la única llave de la bóveda. Todo lo que guardes se cifra con ella.</string>
+    <string name="alta_repite">Repítela</string>
+    <string name="alta_muy_corta">Usa al menos %1$d caracteres.</string>
+    <string name="alta_no_coinciden">Las dos contraseñas no coinciden.</string>
+    <string name="alta_sin_recuperacion_titulo">No hay forma de recuperarla</string>
+    <string name="alta_sin_recuperacion">Esta app no guarda tu contraseña maestra en ningún lado ni la manda a ningún servidor: por eso nadie más puede leer tu bóveda. La otra cara de esa moneda es que si la olvidas, los datos se pierden. Apúntala en un lugar físico seguro.</string>
+    <string name="alta_creando">Creando…</string>
+    <string name="alta_crear">Crear bóveda</string>
+
+    <!-- Desbloqueo -->
+    <string name="desbloqueo_titulo">Bóveda cerrada</string>
+    <string name="desbloqueo_espera">Espera %1$d s</string>
+    <string name="desbloqueo_abriendo">Abriendo…</string>
+    <string name="desbloqueo_abrir">Abrir</string>
+    <string name="desbloqueo_usar_huella">Usar huella</string>
+    <string name="desbloqueo_explicacion">Descifrar la bóveda tarda un momento a propósito: cada intento cuesta el mismo trabajo, y eso es lo que hace inviable probar contraseñas en serie.</string>
+
+    <!-- Biometría -->
+    <string name="huella_abrir_titulo">Abrir la bóveda</string>
+    <string name="huella_abrir_subtitulo">Confirma tu identidad</string>
+    <string name="huella_activar_titulo">Activar desbloqueo con huella</string>
+    <string name="huella_activar_subtitulo">Confirma para guardar la llave</string>
+    <string name="huella_usar_contrasena">Usar contraseña</string>
+
+    <!-- Listado -->
+    <string name="listado_buscar">Buscar</string>
+    <string name="listado_cerrar_boveda">Cerrar bóveda</string>
+    <string name="listado_ajustes">Ajustes</string>
+    <string name="listado_nueva_entrada">Nueva entrada</string>
+    <string name="listado_vacio">La bóveda está vacía</string>
+    <string name="listado_vacio_ayuda">Toca + para guardar tu primera contraseña.</string>
+    <string name="listado_sin_resultados">Sin resultados para «%1$s»</string>
+
+    <!-- Detalle -->
+    <string name="detalle_usuario">Usuario</string>
+    <string name="detalle_contrasena">Contraseña</string>
+    <string name="detalle_sitio">Sitio o app</string>
+    <string name="detalle_notas">Notas</string>
+    <string name="detalle_editar">Editar</string>
+    <string name="detalle_se_oculta">Se ocultará sola en %1$d s.</string>
+    <string name="detalle_actualizada">Actualizada el %1$s</string>
+    <string name="detalle_eliminar_titulo">¿Eliminar «%1$s»?</string>
+    <string name="detalle_eliminar_aviso">Se borra de la bóveda y no se puede deshacer.</string>
+
+    <!-- Editor -->
+    <string name="editor_nueva">Nueva entrada</string>
+    <string name="editor_editar">Editar</string>
+    <string name="editor_titulo_campo">Título</string>
+    <string name="editor_titulo_ejemplo">Banco, correo, wifi de casa…</string>
+    <string name="editor_usuario">Usuario o correo</string>
+    <string name="editor_contrasena">Contraseña</string>
+    <string name="editor_generar">Generar una segura</string>
+    <string name="editor_sitio">Sitio o app (opcional)</string>
+    <string name="editor_notas">Notas (opcional)</string>
+    <string name="editor_nota_pie">Todo lo que escribas aquí se guarda cifrado dentro de la bóveda y no sale del teléfono.</string>
+
+    <!-- Ajustes -->
+    <string name="ajustes_titulo">Ajustes</string>
+    <string name="ajustes_activado">Activado</string>
+
+    <string name="ajustes_cierre_titulo">Cierre automático</string>
+    <string name="ajustes_cierre_explicacion">Cuánto aguanta abierta la bóveda sin que la uses.</string>
+    <string name="ajustes_cierre_instante">Al instante</string>
+    <string name="ajustes_cierre_1">1 min</string>
+    <string name="ajustes_cierre_5">5 min</string>
+    <string name="ajustes_cierre_15">15 min</string>
+
+    <string name="ajustes_portapapeles_titulo">Borrado del portapapeles</string>
+    <string name="ajustes_portapapeles_explicacion">Tiempo antes de limpiar lo que copias. El portapapeles es compartido con todo el sistema: cuanto menos dure ahí una contraseña, mejor.</string>
+    <string name="ajustes_portapapeles_nunca">No borrar</string>
+    <string name="ajustes_portapapeles_15">15 s</string>
+    <string name="ajustes_portapapeles_30">30 s</string>
+    <string name="ajustes_portapapeles_60">60 s</string>
+
+    <string name="ajustes_huella_titulo">Desbloqueo con huella</string>
+    <string name="ajustes_huella_explicacion">Atajo para no teclear la maestra. La llave vive en el chip seguro del teléfono y se destruye sola si se registra una huella nueva.</string>
+
+    <string name="ajustes_borrado_titulo">Borrar tras intentos fallidos</string>
+    <string name="ajustes_borrado_explicacion">Destruye la bóveda al llegar a ese número de contraseñas erróneas seguidas. Protege ante un teléfono perdido; úsalo solo si tienes tus datos anotados en otro lado.</string>
+    <string name="ajustes_borrado_nunca">Nunca</string>
+    <string name="ajustes_borrado_10">10</string>
+    <string name="ajustes_borrado_20">20</string>
+
+    <string name="ajustes_cambiar_maestra">Cambiar contraseña maestra</string>
+
+    <string name="ajustes_respaldo_titulo">Respaldo</string>
+    <string name="ajustes_respaldo_explicacion">Un archivo cifrado con su propia contraseña, para no perder la bóveda si pierdes el teléfono. Guárdalo donde puedas recuperarlo después.</string>
+    <string name="ajustes_exportar">Exportar respaldo cifrado</string>
+    <string name="ajustes_importar">Importar respaldo</string>
+
+    <string name="ajustes_borrar_titulo">Borrar la bóveda</string>
+    <string name="ajustes_borrar_explicacion">Elimina todas las entradas, la contraseña maestra y la llave del equipo. No hay copia en ningún lado, así que no se puede deshacer.</string>
+    <string name="ajustes_borrar_boton">Borrar todo</string>
+    <string name="ajustes_sin_internet">Esta app no tiene permiso de internet. No hay sincronización, ni copia en la nube, ni telemetría: lo que guardas vive solo en este teléfono.</string>
+
+    <!-- Diálogo: cambiar maestra -->
+    <string name="cambio_actual">Contraseña actual</string>
+    <string name="cambio_nueva">Nueva contraseña</string>
+    <string name="cambio_repite">Repite la nueva</string>
+    <string name="cambio_explicacion">Tus entradas no se vuelven a cifrar: lo que cambia es la llave que protege la bóveda, así que el cambio es inmediato.</string>
+    <string name="cambio_confirmar">Cambiar</string>
+
+    <!-- Diálogo: exportar -->
+    <string name="exportar_titulo">Exportar respaldo</string>
+    <string name="exportar_explicacion_maestra">Sacar todas tus contraseñas de la bóveda es la operación más delicada de la app, así que se pide la maestra otra vez.</string>
+    <string name="exportar_explicacion_archivo">El archivo lleva su propia contraseña. Puede ser la misma maestra, pero si algún día la cambias, los respaldos viejos seguirán abriéndose con la de entonces.</string>
+    <string name="exportar_clave_archivo">Contraseña del archivo</string>
+    <string name="exportar_repite_archivo">Repite la del archivo</string>
+    <string name="exportar_confirmar">Exportar</string>
+
+    <!-- Diálogo: importar -->
+    <string name="importar_titulo">Importar respaldo</string>
+    <string name="importar_clave">Contraseña del archivo</string>
+    <string name="importar_reemplazar">Reemplazar todo lo que tengo</string>
+    <string name="importar_explicacion_reemplazar">Se borran las entradas actuales y quedan solo las del archivo.</string>
+    <string name="importar_explicacion_fusionar">Se agregan al final. Lo que ya esté idéntico no se duplica.</string>
+    <string name="importar_confirmar">Importar</string>
+
+    <!-- Diálogo: borrado total -->
+    <string name="borrado_palabra">BORRAR</string>
+    <string name="borrado_instruccion">Se perderán todas las entradas. Escribe BORRAR para confirmar.</string>
+
+    <!-- Avisos: apertura de la bóveda -->
+    <string name="aviso_incorrecta_espera">Contraseña incorrecta. Espera %1$d s antes de reintentar.</string>
+    <string name="aviso_incorrecta">Contraseña incorrecta. Intento %1$d.</string>
+    <string name="aviso_en_espera">Demasiados intentos. Espera %1$d s.</string>
+    <string name="aviso_borrada">Se alcanzó el límite de intentos: la bóveda se borró.</string>
+    <string name="aviso_generico">Algo salió mal.</string>
+    <string name="aviso_no_se_pudo_abrir">No se pudo abrir la bóveda.</string>
+
+    <!-- Avisos: portapapeles -->
+    <string name="aviso_copiado">Copiado.</string>
+    <string name="aviso_copiado_con_borrado">Copiado. Se borra del portapapeles en %1$d s.</string>
+
+    <!-- Avisos: huella -->
+    <string name="aviso_huella_activada">Desbloqueo con huella activado.</string>
+    <string name="aviso_huella_desactivada">Desbloqueo con huella desactivado.</string>
+    <string name="aviso_huella_no_activada">No se pudo activar el desbloqueo con huella.</string>
+    <string name="aviso_huella_invalidada">El atajo de huella se invalidó. Usa tu contraseña maestra.</string>
+    <string name="aviso_huella_no_disponible">Este equipo no tiene biometría fuerte registrada.</string>
+    <string name="aviso_huella_sin_llave">No se pudo preparar la llave del equipo.</string>
+
+    <!-- Avisos: maestra -->
+    <string name="aviso_maestra_actualizada">Contraseña maestra actualizada.</string>
+    <string name="aviso_maestra_incorrecta_actual">La contraseña actual no es correcta.</string>
+
+    <!-- Avisos: respaldo -->
+    <string name="aviso_respaldo_creado">Respaldo creado con %1$d entradas.</string>
+    <string name="aviso_respaldo_maestra_incorrecta">La contraseña maestra no es correcta.</string>
+    <string name="aviso_respaldo_boveda_cerrada">La bóveda se cerró antes de terminar.</string>
+    <string name="aviso_importadas">Importadas %1$d entradas.</string>
+    <string name="aviso_importadas_con_omitidas">Importadas %1$d. Se omitieron %2$d que ya estaban.</string>
+    <string name="aviso_importar_clave_incorrecta">La contraseña del archivo no es correcta, o el archivo fue alterado.</string>
+    <string name="aviso_importar_no_es_respaldo">Ese archivo no es un respaldo de Bóveda.</string>
+
+    <!-- Errores de las capas de abajo -->
+    <string name="error_no_configurada">La bóveda no está configurada.</string>
+    <string name="error_atajo_inactivo">El atajo no está activo.</string>
+    <string name="error_atajo_invalido">El atajo dejó de ser válido. Usa tu contraseña maestra.</string>
+    <string name="aviso_biometria_sin_llave">El sistema no devolvió la llave.</string>
+    <string name="error_destino_no_escribible">No se pudo escribir en ese destino.</string>
+    <string name="error_escribir_archivo">No se pudo escribir el archivo.</string>
+    <string name="error_sin_permiso_escritura">Sin permiso para escribir ahí.</string>
+    <string name="error_leer_archivo">No se pudo leer ese archivo.</string>
+    <string name="error_sin_permiso_lectura">Sin permiso para leer ahí.</string>
+    <string name="error_archivo_grande">El archivo es demasiado grande.</string>
+    <string name="error_version_no_soportada">El archivo es de la versión %1$d y esta app lee la %2$d.</string>
+    <string name="error_respaldo_danado">El respaldo está dañado: %1$s.</string>
 </resources>

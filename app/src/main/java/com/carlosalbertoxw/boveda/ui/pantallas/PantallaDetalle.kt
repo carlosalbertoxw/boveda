@@ -35,10 +35,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import com.carlosalbertoxw.boveda.R
 import com.carlosalbertoxw.boveda.ui.ModeloBoveda
 import java.text.DateFormat
 import java.util.Date
@@ -84,19 +86,28 @@ fun PantallaDetalle(
                 title = { Text(actual.titulo, maxLines = 1) },
                 navigationIcon = {
                     IconButton(onClick = alVolver) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.volver)
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = { confirmaBorrado = true }) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Eliminar")
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.eliminar)
+                        )
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = alEditar) {
-                Icon(Icons.Filled.Edit, contentDescription = "Editar")
+                Icon(
+                    Icons.Filled.Edit,
+                    contentDescription = stringResource(R.string.detalle_editar)
+                )
             }
         }
     ) { relleno ->
@@ -109,17 +120,19 @@ fun PantallaDetalle(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (actual.usuario.isNotBlank()) {
+                val etiquetaUsuario = stringResource(R.string.detalle_usuario)
                 CampoCopiable(
-                    etiqueta = "Usuario",
+                    etiqueta = etiquetaUsuario,
                     valor = actual.usuario,
-                    alCopiar = { modelo.copia("Usuario", actual.usuario) }
+                    alCopiar = { modelo.copia(etiquetaUsuario, actual.usuario) }
                 )
             }
 
+            val etiquetaContrasena = stringResource(R.string.detalle_contrasena)
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     Text(
-                        "Contrasena",
+                        etiquetaContrasena,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -137,16 +150,23 @@ fun PantallaDetalle(
                         IconButton(onClick = { visible = !visible }) {
                             Icon(
                                 if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                                contentDescription = if (visible) "Ocultar" else "Mostrar"
+                                contentDescription = stringResource(
+                                    if (visible) R.string.ocultar else R.string.mostrar
+                                )
                             )
                         }
-                        IconButton(onClick = { modelo.copia("Contrasena", actual.contrasena) }) {
-                            Icon(Icons.Filled.ContentCopy, contentDescription = "Copiar")
+                        IconButton(
+                            onClick = { modelo.copia(etiquetaContrasena, actual.contrasena) }
+                        ) {
+                            Icon(
+                                Icons.Filled.ContentCopy,
+                                contentDescription = stringResource(R.string.copiar)
+                            )
                         }
                     }
                     if (visible) {
                         Text(
-                            "Se ocultara sola en $SEGUNDOS_VISIBLE s.",
+                            stringResource(R.string.detalle_se_oculta, SEGUNDOS_VISIBLE),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -158,10 +178,11 @@ fun PantallaDetalle(
                 // Solo texto copiable: no se ofrece abrir el enlace. Lanzar un
                 // navegador seria justo lo que esta app no hace, hablar con
                 // otras apps, y ademas filtraria a que sitios tienes cuenta.
+                val etiquetaSitio = stringResource(R.string.detalle_sitio)
                 CampoCopiable(
-                    etiqueta = "Sitio o app",
+                    etiqueta = etiquetaSitio,
                     valor = actual.sitio,
-                    alCopiar = { modelo.copia("Sitio", actual.sitio) }
+                    alCopiar = { modelo.copia(etiquetaSitio, actual.sitio) }
                 )
             }
 
@@ -169,7 +190,7 @@ fun PantallaDetalle(
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)) {
                         Text(
-                            "Notas",
+                            stringResource(R.string.detalle_notas),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -181,7 +202,10 @@ fun PantallaDetalle(
 
             val formato = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
             Text(
-                "Actualizada el ${formato.format(Date(actual.actualizadoEn))}",
+                stringResource(
+                    R.string.detalle_actualizada,
+                    formato.format(Date(actual.actualizadoEn))
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -191,17 +215,19 @@ fun PantallaDetalle(
     if (confirmaBorrado) {
         DialogoSeguro(
             alCerrar = { confirmaBorrado = false },
-            titulo = { Text("Eliminar \"${actual.titulo}\"?") },
-            contenido = { Text("Se borra de la boveda y no se puede deshacer.") },
+            titulo = { Text(stringResource(R.string.detalle_eliminar_titulo, actual.titulo)) },
+            contenido = { Text(stringResource(R.string.detalle_eliminar_aviso)) },
             botonConfirmar = {
                 TextButton(onClick = {
                     confirmaBorrado = false
                     modelo.elimina(actual)
                     alVolver()
-                }) { Text("Eliminar") }
+                }) { Text(stringResource(R.string.eliminar)) }
             },
             botonCancelar = {
-                TextButton(onClick = { confirmaBorrado = false }) { Text("Cancelar") }
+                TextButton(onClick = { confirmaBorrado = false }) {
+                    Text(stringResource(R.string.cancelar))
+                }
             }
         )
     }
@@ -216,7 +242,10 @@ private fun PantallaVacia(alVolver: () -> Unit) {
                 title = { Text("") },
                 navigationIcon = {
                     IconButton(onClick = alVolver) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.volver)
+                        )
                     }
                 }
             )
@@ -241,7 +270,10 @@ private fun CampoCopiable(etiqueta: String, valor: String, alCopiar: () -> Unit)
                 Text(valor, style = MaterialTheme.typography.bodyLarge)
             }
             IconButton(onClick = alCopiar) {
-                Icon(Icons.Filled.ContentCopy, contentDescription = "Copiar $etiqueta")
+                Icon(
+                    Icons.Filled.ContentCopy,
+                    contentDescription = stringResource(R.string.copiar_campo, etiqueta)
+                )
             }
         }
     }

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.carlosalbertoxw.boveda.AplicacionBoveda
+import com.carlosalbertoxw.boveda.R
 import com.carlosalbertoxw.boveda.datos.GestorRespaldo
 
 /**
@@ -40,7 +41,7 @@ class ModeloRespaldo(app: Application) : AndroidViewModel(app) {
         val m = maestra.toCharArray()
         val c = contrasenaArchivo.toCharArray()
         try {
-            avisos.muestra(mensajeDe(respaldo.exporta(destino, m, c)))
+            avisos.muestra(mensajeDe(getApplication(), respaldo.exporta(destino, m, c)))
         } finally {
             m.fill(' ')
             c.fill(' ')
@@ -50,7 +51,7 @@ class ModeloRespaldo(app: Application) : AndroidViewModel(app) {
     fun importa(origen: Uri, contrasenaArchivo: String, reemplazar: Boolean) = lanza {
         val c = contrasenaArchivo.toCharArray()
         try {
-            avisos.muestra(mensajeDe(respaldo.importa(origen, c, reemplazar)))
+            avisos.muestra(mensajeDe(getApplication(), respaldo.importa(origen, c, reemplazar)))
         } finally {
             c.fill(' ')
         }
@@ -62,7 +63,7 @@ class ModeloRespaldo(app: Application) : AndroidViewModel(app) {
             try {
                 bloque()
             } catch (e: Exception) {
-                avisos.muestra(e.message ?: "Algo salio mal.")
+                avisos.muestra(e.message ?: getApplication<Application>().getString(R.string.aviso_generico))
             } finally {
                 _ocupado.value = false
             }
