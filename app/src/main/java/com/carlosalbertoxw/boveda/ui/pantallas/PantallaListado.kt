@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -41,6 +42,7 @@ fun PantallaListado(
     modelo: ModeloBoveda,
     alAbrir: (Long) -> Unit,
     alCrear: () -> Unit,
+    alPapelera: () -> Unit,
     alAjustes: () -> Unit
 ) {
     val credenciales by modelo.credenciales.collectAsStateWithLifecycle()
@@ -55,6 +57,12 @@ fun PantallaListado(
                         Icon(
                             Icons.Filled.Lock,
                             contentDescription = stringResource(R.string.listado_cerrar_boveda)
+                        )
+                    }
+                    IconButton(onClick = alPapelera) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.listado_papelera)
                         )
                     }
                     IconButton(onClick = alAjustes) {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Card
@@ -23,6 +25,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,12 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import com.carlosalbertoxw.boveda.R
+import com.carlosalbertoxw.boveda.datos.Papelera
 import com.carlosalbertoxw.boveda.ui.ModeloBoveda
 import java.text.DateFormat
 import java.util.Date
-
-/** Segundos que la contrasena permanece visible antes de taparse sola. */
-private const val SEGUNDOS_VISIBLE = 20
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,7 +55,8 @@ fun PantallaDetalle(
     modelo: ModeloBoveda,
     id: Long,
     alVolver: () -> Unit,
-    alEditar: () -> Unit
+    alEditar: () -> Unit,
+    alHistorial: () -> Unit
 ) {
     val todas by modelo.todas.collectAsStateWithLifecycle()
     val credencial = remember(todas, id) { todas.firstOrNull { it.id == id } }
@@ -175,6 +177,15 @@ fun PantallaDetalle(
                 }
             }
 
+            // El historial no se despliega aqui dentro: son mas contrasenas en
+            // la misma pantalla, y esta ya tiene una. Se va a verlas a
+            // proposito, igual que se entra a esta entrada a proposito.
+            OutlinedButton(onClick = alHistorial, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Filled.History, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.detalle_historial))
+            }
+
             if (actual.sitio.isNotBlank()) {
                 // Solo texto copiable: no se ofrece abrir el enlace. Lanzar un
                 // navegador seria justo lo que esta app no hace, hablar con
@@ -219,11 +230,15 @@ fun PantallaDetalle(
         DialogoSeguro(
             alCerrar = { confirmaBorrado = false },
             titulo = { Text(stringResource(R.string.detalle_eliminar_titulo, actual.titulo)) },
-            contenido = { Text(stringResource(R.string.detalle_eliminar_aviso)) },
+            contenido = {
+                Text(
+                    stringResource(R.string.detalle_eliminar_aviso, Papelera.DIAS_RETENCION)
+                )
+            },
             botonConfirmar = {
                 TextButton(onClick = {
                     confirmaBorrado = false
-                    modelo.elimina(actual)
+                    modelo.mandaAPapelera(actual)
                     alVolver()
                 }) { Text(stringResource(R.string.eliminar)) }
             },

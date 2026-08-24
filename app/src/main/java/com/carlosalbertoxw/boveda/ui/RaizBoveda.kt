@@ -24,7 +24,9 @@ import com.carlosalbertoxw.boveda.ui.pantallas.PantallaAlta
 import com.carlosalbertoxw.boveda.ui.pantallas.PantallaDesbloqueo
 import com.carlosalbertoxw.boveda.ui.pantallas.PantallaDetalle
 import com.carlosalbertoxw.boveda.ui.pantallas.PantallaEditor
+import com.carlosalbertoxw.boveda.ui.pantallas.PantallaHistorial
 import com.carlosalbertoxw.boveda.ui.pantallas.PantallaListado
+import com.carlosalbertoxw.boveda.ui.pantallas.PantallaPapelera
 
 /**
  * La navegacion cuelga del estado del candado, no al reves.
@@ -63,6 +65,8 @@ private const val LISTADO = "listado"
 private const val AJUSTES = "ajustes"
 private const val DETALLE = "detalle"
 private const val EDITOR = "editor"
+private const val PAPELERA = "papelera"
+private const val HISTORIAL = "historial"
 
 @Composable
 private fun BovedaAbierta(modelo: ModeloBoveda) {
@@ -74,6 +78,7 @@ private fun BovedaAbierta(modelo: ModeloBoveda) {
                 modelo = modelo,
                 alAbrir = { id -> nav.navigate("$DETALLE/$id") },
                 alCrear = { nav.navigate("$EDITOR/0") },
+                alPapelera = { nav.navigate(PAPELERA) },
                 alAjustes = { nav.navigate(AJUSTES) }
             )
         }
@@ -83,8 +88,16 @@ private fun BovedaAbierta(modelo: ModeloBoveda) {
                 modelo = modelo,
                 id = id,
                 alVolver = { nav.popBackStack() },
-                alEditar = { nav.navigate("$EDITOR/$id") }
+                alEditar = { nav.navigate("$EDITOR/$id") },
+                alHistorial = { nav.navigate("$HISTORIAL/$id") }
             )
+        }
+        composable("$HISTORIAL/{id}") { pila ->
+            val id = pila.arguments?.getString("id")?.toLongOrNull() ?: 0L
+            PantallaHistorial(modelo = modelo, id = id, alVolver = { nav.popBackStack() })
+        }
+        composable(PAPELERA) {
+            PantallaPapelera(alVolver = { nav.popBackStack() })
         }
         composable("$EDITOR/{id}") { pila ->
             val id = pila.arguments?.getString("id")?.toLongOrNull() ?: 0L

@@ -47,6 +47,16 @@ import com.carlosalbertoxw.boveda.seguridad.Generador
 import com.carlosalbertoxw.boveda.seguridad.Kdf
 
 /**
+ * Segundos que una contrasena descubierta aguanta antes de taparse sola.
+ *
+ * Vive aqui y no en la pantalla del detalle porque ahora hay dos sitios donde
+ * se puede descubrir una —el detalle y el historial— y las dos tienen que
+ * taparse con el mismo criterio: descubrir una contrasena es un acto deliberado
+ * y momentaneo, no un estado en el que se deje la pantalla.
+ */
+const val SEGUNDOS_VISIBLE = 20
+
+/**
  * Un dialogo con las mismas defensas que la pantalla que hay debajo.
  *
  * Aqui esta el detalle que se escapa facil: `filterTouchesWhenObscured` e

@@ -54,8 +54,17 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
         // la app. Se vuelve a pedir la maestra aunque la boveda ya este abierta.
         if (!gestor.verificaMaestra(maestra)) return@withContext Exportacion.MaestraIncorrecta
 
-        val credenciales = db.credencialDao().listaCompleta()
-        val archivo = Respaldo.escribe(credenciales, contrasenaArchivo)
+        // Se exporta la boveda entera, papelera incluida, con el historial de
+        // cada entrada. Un respaldo que solo llevara lo activo convertiria
+        // "restaurar" en un segundo borrado: lo que estaba en la papelera
+        // esperando su plazo desapareceria sin que nadie lo decidiera.
+        val dao = db.credencialDao()
+        val credenciales = dao.listaConPapelera()
+        val historial = dao.historialCompleto().groupBy { it.credencialId }
+        val entradas = credenciales.map {
+            Respaldo.Entrada(it, historial[it.id].orEmpty())
+        }
+        val archivo = Respaldo.escribe(entradas, contrasenaArchivo)
 
         try {
             app.contentResolver.openOutputStream(destino, "wt")?.use { it.write(archivo) }
@@ -110,7 +119,7 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
             )
             is Respaldo.Lectura.Corrupto ->
                 Importacion.Falla(app.getString(R.string.error_respaldo_danado, lectura.detalle))
-            is Respaldo.Lectura.Ok -> vuelca(db, lectura.credenciales, reemplazar)
+            is Respaldo.Lectura.Ok -> vuelca(db, lectura.entradas, reemplazar)
         }
     }
 
@@ -118,19 +127,24 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
 
     private suspend fun vuelca(
         db: BovedaDatabase,
-        entrantes: List<Credencial>,
+        entrantes: List<Respaldo.Entrada>,
         reemplazar: Boolean
     ): Importacion {
         val dao = db.credencialDao()
 
         if (reemplazar) {
             dao.vacia()
-            entrantes.forEach { dao.inserta(it) }
+            entrantes.forEach { dao.insertaConHistorial(it.credencial, it.historial) }
             return Importacion.Ok(entrantes.size, 0)
         }
 
-        val plan = Fusion.planifica(dao.listaCompleta(), entrantes)
-        plan.nuevas.forEach { dao.inserta(it) }
+        // Se compara contra la boveda entera, papelera incluida: si solo se
+        // mirara lo activo, importar dejaria una copia nueva al lado de la que
+        // el usuario acaba de mandar a la papelera, y el borrado se desharia
+        // solo sin decir nada. Lo que sigue en la papelera se recupera desde
+        // ahi, que es donde el usuario lo dejo.
+        val plan = Fusion.planifica(dao.listaConPapelera(), entrantes)
+        plan.nuevas.forEach { dao.insertaConHistorial(it.credencial, it.historial) }
         return Importacion.Ok(plan.nuevas.size, plan.omitidas)
     }
 
@@ -143,7 +157,7 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
      */
     object Fusion {
 
-        data class Plan(val nuevas: List<Credencial>, val omitidas: Int)
+        data class Plan(val nuevas: List<Respaldo.Entrada>, val omitidas: Int)
 
         /**
          * Dos entradas son la misma si coinciden titulo, usuario y contrasena.
@@ -151,15 +165,20 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
          * la boveda entera, que es justo lo que uno hace cuando no esta seguro
          * de si el respaldo entro.
          *
+         * El historial no entra en la comparacion: es la misma entrada aunque
+         * el archivo recuerde un cambio de contrasena que esta boveda no vio.
+         * Cuando se omite una entrada tambien se omite su historial, que es lo
+         * coherente —la que se queda ya tiene el suyo—.
+         *
          * Los duplicados dentro del propio archivo tambien cuentan: el segundo
          * se omite igual que si ya estuviera en la boveda.
          */
-        fun planifica(existentes: List<Credencial>, entrantes: List<Credencial>): Plan {
+        fun planifica(existentes: List<Credencial>, entrantes: List<Respaldo.Entrada>): Plan {
             val vistas = existentes.mapTo(HashSet()) { huella(it) }
-            val nuevas = mutableListOf<Credencial>()
+            val nuevas = mutableListOf<Respaldo.Entrada>()
             var omitidas = 0
-            entrantes.forEach { credencial ->
-                if (vistas.add(huella(credencial))) nuevas += credencial else omitidas++
+            entrantes.forEach { entrada ->
+                if (vistas.add(huella(entrada.credencial))) nuevas += entrada else omitidas++
             }
             return Plan(nuevas, omitidas)
         }

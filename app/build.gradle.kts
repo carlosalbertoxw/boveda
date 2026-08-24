@@ -94,6 +94,11 @@ android {
         compose = true
     }
 
+    // Los esquemas exportados viajan como assets de las pruebas instrumentadas:
+    // es de donde MigrationTestHelper saca la version 1 para construirla tal y
+    // como era antes de migrar.
+    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -167,4 +172,7 @@ dependencies {
     // estaban declarados sin que existiera una sola prueba que los usara.
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.core.ktx)
+    // Solo para MigrationTestHelper: migrar la base es lo unico de esta app que
+    // puede perder datos del usuario en silencio, asi que se prueba de verdad.
+    androidTestImplementation(libs.androidx.room.testing)
 }

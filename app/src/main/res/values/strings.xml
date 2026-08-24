@@ -69,6 +69,38 @@
     <string name="listado_vacio">La bóveda está vacía</string>
     <string name="listado_vacio_ayuda">Toca + para guardar tu primera contraseña.</string>
     <string name="listado_sin_resultados">Sin resultados para «%1$s»</string>
+    <string name="listado_papelera">Papelera</string>
+
+    <!-- Papelera -->
+    <string name="papelera_titulo">Papelera</string>
+    <string name="papelera_vacia">La papelera está vacía</string>
+    <string name="papelera_vacia_ayuda">Lo que borres se queda aquí %1$d días antes de desaparecer solo.</string>
+    <string name="papelera_vence_ya">Ya cumplió el plazo: desaparece al volver a abrir la bóveda.</string>
+    <plurals name="papelera_restante">
+        <item quantity="one">Se borra en %1$d día</item>
+        <item quantity="other">Se borra en %1$d días</item>
+    </plurals>
+    <string name="papelera_restaurar">Restaurar</string>
+    <string name="papelera_borrar_ahora">Borrar ahora</string>
+    <string name="papelera_vaciar">Vaciar papelera</string>
+    <string name="papelera_vaciar_titulo">¿Vaciar la papelera?</string>
+    <string name="papelera_vaciar_aviso">Se destruyen las %1$d entradas que hay aquí, con todo su historial de contraseñas. No se puede deshacer.</string>
+    <string name="papelera_borrar_titulo">¿Borrar «%1$s» para siempre?</string>
+    <string name="papelera_borrar_aviso">Se destruye la entrada y todas las contraseñas que tuvo. No se puede deshacer.</string>
+    <string name="papelera_explicacion">Estas entradas ya no salen en el listado, pero siguen dentro de la bóveda y siguen cifradas. Se borran solas al cumplir el plazo.</string>
+
+    <!-- Historial de contraseñas -->
+    <string name="historial_titulo">Historial de contraseñas</string>
+    <string name="historial_vacio">Esta entrada todavía no tiene historial.</string>
+    <string name="historial_actual">Actual</string>
+    <string name="historial_desde">Desde el %1$s</string>
+    <string name="historial_usar">Usar esta</string>
+    <string name="historial_borrar">Borrar del historial</string>
+    <string name="historial_usar_titulo">¿Volver a esta contraseña?</string>
+    <string name="historial_usar_aviso">La entrada pasará a usar esta contraseña y la marca de «actual» se moverá aquí. La de ahora no se pierde: se queda en el historial.</string>
+    <string name="historial_borrar_titulo">¿Borrar esta contraseña del historial?</string>
+    <string name="historial_borrar_aviso">Desaparece de la bóveda para siempre. La entrada y la contraseña que usa hoy no se tocan.</string>
+    <string name="historial_explicacion">Una contraseña vieja no deja de servir el día que la cambias: sigue abriendo las sesiones que quedaron iniciadas y los respaldos hechos con ella. Por eso se guardan aquí, dentro de la bóveda, y por eso puedes borrar una por una las que ya no te sirvan.</string>
 
     <!-- Detalle -->
     <string name="detalle_usuario">Usuario</string>
@@ -79,7 +111,8 @@
     <string name="detalle_se_oculta">Se ocultará sola en %1$d s.</string>
     <string name="detalle_actualizada">Actualizada el %1$s</string>
     <string name="detalle_eliminar_titulo">¿Eliminar «%1$s»?</string>
-    <string name="detalle_eliminar_aviso">Se borra de la bóveda y no se puede deshacer.</string>
+    <string name="detalle_eliminar_aviso">Se va a la papelera. Ahí sigue %1$d días por si te arrepientes, y después se borra sola.</string>
+    <string name="detalle_historial">Historial de contraseñas</string>
 
     <!-- Editor -->
     <string name="editor_nueva">Nueva entrada</string>
@@ -123,7 +156,7 @@
     <string name="ajustes_cambiar_maestra">Cambiar contraseña maestra</string>
 
     <string name="ajustes_respaldo_titulo">Respaldo</string>
-    <string name="ajustes_respaldo_explicacion">Un archivo cifrado con su propia contraseña, para no perder la bóveda si pierdes el teléfono. Guárdalo donde puedas recuperarlo después.</string>
+    <string name="ajustes_respaldo_explicacion">Un archivo cifrado con su propia contraseña, para no perder la bóveda si pierdes el teléfono. Lleva la bóveda entera: lo que está en la papelera y el historial de contraseñas de cada entrada. Guárdalo donde puedas recuperarlo después.</string>
     <string name="ajustes_exportar">Exportar respaldo cifrado</string>
     <string name="ajustes_importar">Importar respaldo</string>
 
@@ -151,8 +184,8 @@
     <string name="importar_titulo">Importar respaldo</string>
     <string name="importar_clave">Contraseña del archivo</string>
     <string name="importar_reemplazar">Reemplazar todo lo que tengo</string>
-    <string name="importar_explicacion_reemplazar">Se borran las entradas actuales y quedan solo las del archivo.</string>
-    <string name="importar_explicacion_fusionar">Se agregan al final. Lo que ya esté idéntico no se duplica.</string>
+    <string name="importar_explicacion_reemplazar">Se borran las entradas actuales —con su historial y su papelera— y quedan solo las del archivo.</string>
+    <string name="importar_explicacion_fusionar">Se agregan al final, cada una con su historial. Lo que ya esté idéntico no se duplica, ni siquiera si lo tienes en la papelera.</string>
     <string name="importar_confirmar">Importar</string>
 
     <!-- Diálogo: borrado total -->
@@ -166,6 +199,15 @@
     <string name="aviso_borrada">Se alcanzó el límite de intentos: la bóveda se borró.</string>
     <string name="aviso_generico">Algo salió mal.</string>
     <string name="aviso_no_se_pudo_abrir">No se pudo abrir la bóveda.</string>
+
+    <!-- Avisos: papelera e historial -->
+    <string name="aviso_a_la_papelera">En la papelera. Se borra sola en %1$d días.</string>
+    <string name="aviso_restaurada">«%1$s» vuelve a la bóveda.</string>
+    <string name="aviso_borrada_para_siempre">«%1$s» se borró para siempre.</string>
+    <string name="aviso_papelera_vaciada">Papelera vacía: se borraron %1$d entradas.</string>
+    <string name="aviso_historial_restaurada">Esa vuelve a ser la contraseña de la entrada.</string>
+    <string name="aviso_historial_borrada">Contraseña borrada del historial.</string>
+    <string name="aviso_historial_es_la_actual">Esa es la contraseña que usas hoy. Cámbiala antes de borrarla del historial.</string>
 
     <!-- Avisos: portapapeles -->
     <string name="aviso_copiado">Copiado.</string>

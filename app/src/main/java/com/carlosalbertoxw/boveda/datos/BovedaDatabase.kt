@@ -5,15 +5,67 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
-@Database(entities = [Credencial::class], version = 1, exportSchema = true)
+@Database(
+    entities = [Credencial::class, HistorialContrasena::class],
+    version = 2,
+    exportSchema = true
+)
 abstract class BovedaDatabase : RoomDatabase() {
 
     abstract fun credencialDao(): CredencialDao
 
     companion object {
         const val NOMBRE = "boveda.db"
+
+        /**
+         * De la boveda de una sola tabla a la que tiene papelera e historial.
+         *
+         * Las dos cosas que agrega son aditivas y ninguna toca lo que ya estaba
+         * guardado: `eliminadoEn` entra como columna nueva y nula, que es
+         * exactamente lo que significa "esta entrada no esta borrada", asi que
+         * todas las filas viejas quedan activas sin escribir en ellas.
+         *
+         * La columna se agrega sin clausula DEFAULT a proposito. `ADD COLUMN
+         * ... DEFAULT NULL` deja un valor por omision registrado en el esquema
+         * que la entidad no declara, y la validacion de Room al abrir compara
+         * eso campo por campo: la base se abriria con error justo despues de
+         * una migracion correcta.
+         *
+         * El ultimo INSERT es la parte que no se puede omitir. Sin el, las
+         * entradas anteriores a esta version quedarian con el historial vacio y
+         * la pantalla no tendria ninguna fila que marcar como actual; su
+         * contrasena de hoy —la que mas falta hace tener anotada— seria la unica
+         * que nunca estuvo en el historial. Se les abre con lo que tienen ahora
+         * mismo, fechada en su ultima actualizacion, que es lo mas cercano a la
+         * verdad que se puede reconstruir.
+         */
+        private val DE_1_A_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `credenciales` ADD COLUMN `eliminadoEn` INTEGER")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `historial_contrasenas` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`credencialId` INTEGER NOT NULL, " +
+                        "`contrasena` TEXT NOT NULL, " +
+                        "`creadoEn` INTEGER NOT NULL, " +
+                        "`actual` INTEGER NOT NULL, " +
+                        "FOREIGN KEY(`credencialId`) REFERENCES `credenciales`(`id`) " +
+                        "ON UPDATE NO ACTION ON DELETE CASCADE)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_historial_contrasenas_credencialId` " +
+                        "ON `historial_contrasenas` (`credencialId`)"
+                )
+                db.execSQL(
+                    "INSERT INTO `historial_contrasenas` " +
+                        "(`credencialId`, `contrasena`, `creadoEn`, `actual`) " +
+                        "SELECT `id`, `contrasena`, `actualizadoEn`, 1 FROM `credenciales`"
+                )
+            }
+        }
 
         /**
          * Politica de migracion: **siempre explicita, nunca destructiva.**
@@ -32,7 +84,7 @@ abstract class BovedaDatabase : RoomDatabase() {
          * IllegalStateException al abrir y el usuario ve "no se pudo abrir la
          * boveda" con sus datos intactos pero inalcanzables.
          */
-        private val MIGRACIONES: Array<Migration> = emptyArray()
+        private val MIGRACIONES: Array<Migration> = arrayOf(DE_1_A_2)
 
         /**
          * A diferencia de una app normal, esta base NO se abre al arrancar: se

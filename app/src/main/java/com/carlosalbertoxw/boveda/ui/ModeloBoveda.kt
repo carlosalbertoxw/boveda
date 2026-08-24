@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
@@ -23,6 +24,8 @@ import kotlinx.coroutines.launch
 import com.carlosalbertoxw.boveda.AplicacionBoveda
 import com.carlosalbertoxw.boveda.R
 import com.carlosalbertoxw.boveda.datos.Credencial
+import com.carlosalbertoxw.boveda.datos.HistorialContrasena
+import com.carlosalbertoxw.boveda.datos.Papelera
 import com.carlosalbertoxw.boveda.seguridad.AlmacenBiometrico
 import com.carlosalbertoxw.boveda.seguridad.Apertura
 import com.carlosalbertoxw.boveda.seguridad.Biometria
@@ -109,6 +112,30 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
     fun busca(texto: String) { _busqueda.value = texto }
 
     fun avisa(texto: String) = avisos.muestra(texto)
+
+    /**
+     * La papelera se vacia sola al abrir la boveda.
+     *
+     * No hay ninguna tarea programada que lo haga, y no puede haberla: sin
+     * boveda abierta no hay frase, sin frase no hay base, y una alarma del
+     * sistema que despertara a la app a las tres de la manana no tendria con
+     * que descifrar nada. Que el plazo se cumpla al abrir significa que una
+     * entrada borrada puede sobrevivir a sus treinta dias si nadie usa la app
+     * en meses, lo cual es inofensivo: sigue estando dentro del mismo archivo
+     * cifrado, y se destruye en cuanto alguien vuelve a mirar.
+     */
+    init {
+        viewModelScope.launch {
+            gestor.estado.collect { estado ->
+                if (estado !is EstadoBoveda.Abierta) return@collect
+                // Si la boveda se cierra a mitad, el fallo no debe tumbar la app:
+                // lo vencido seguira vencido en la proxima apertura.
+                runCatching {
+                    estado.db.credencialDao().purga(Papelera.limite(System.currentTimeMillis()))
+                }
+            }
+        }
+    }
 
     // --- Apertura y cierre ----------------------------------------------
 
@@ -242,9 +269,14 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun elimina(credencial: Credencial) = lanza {
+    /**
+     * Borrar ya no borra: aparta. La entrada sale del listado y se queda en la
+     * papelera hasta que venza el plazo o alguien decida destruirla a mano.
+     */
+    fun mandaAPapelera(credencial: Credencial) = lanza {
         val dao = daoAbierto() ?: return@lanza
-        dao.elimina(credencial)
+        dao.mandaAPapelera(credencial.id, System.currentTimeMillis())
+        avisos.muestra(texto(R.string.aviso_a_la_papelera, Papelera.DIAS_RETENCION))
     }
 
     fun copia(etiqueta: String, texto: String) {
@@ -253,6 +285,47 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
         avisos.muestra(
             if (segundos > 0) texto(R.string.aviso_copiado_con_borrado, segundos)
             else texto(R.string.aviso_copiado)
+        )
+    }
+
+    // --- Historial de contrasenas -----------------------------------------
+
+    /**
+     * Las contrasenas que esta entrada tuvo, de la mas reciente a la mas
+     * vieja. Se pide por id y no se guarda como estado del modelo: solo existe
+     * mientras la pantalla del historial esta delante, y desaparece con ella.
+     */
+    fun historialDe(id: Long): Flow<List<HistorialContrasena>> =
+        gestor.estado.flatMapLatest { estado ->
+            if (estado is EstadoBoveda.Abierta) {
+                estado.db.credencialDao().historialDe(id).catch { emit(emptyList()) }
+            } else {
+                flowOf(emptyList())
+            }
+        }
+
+    /** Devuelve la marca de actual a una contrasena anterior, y con ella la entrada. */
+    fun usaDelHistorial(entrada: HistorialContrasena) = lanza {
+        val dao = daoAbierto() ?: return@lanza
+        dao.usaDelHistorial(entrada, System.currentTimeMillis())
+        avisos.muestra(texto(R.string.aviso_historial_restaurada))
+    }
+
+    /**
+     * Saca una contrasena vieja del historial para siempre.
+     *
+     * La condicion de que no sea la actual la impone el SQL, no esta pantalla,
+     * asi que aqui se reacciona a lo que de verdad paso: si no cayo ninguna
+     * fila es que se pidio borrar la marcada, y se dice por que no se hizo.
+     */
+    fun borraDelHistorial(entrada: HistorialContrasena) = lanza {
+        val dao = daoAbierto() ?: return@lanza
+        val borradas = dao.borraDelHistorial(entrada.id)
+        avisos.muestra(
+            texto(
+                if (borradas > 0) R.string.aviso_historial_borrada
+                else R.string.aviso_historial_es_la_actual
+            )
         )
     }
 

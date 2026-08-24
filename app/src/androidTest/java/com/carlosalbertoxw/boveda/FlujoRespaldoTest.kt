@@ -9,10 +9,12 @@ import com.carlosalbertoxw.boveda.datos.Credencial
 import com.carlosalbertoxw.boveda.datos.GestorRespaldo
 import com.carlosalbertoxw.boveda.seguridad.EstadoBoveda
 import com.carlosalbertoxw.boveda.seguridad.GestorBoveda
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -132,6 +134,49 @@ class FlujoRespaldoTest {
 
         assertEquals(GestorRespaldo.Importacion.ContrasenaIncorrecta, resultado)
         assertEquals(0, dao().listaCompleta().size)
+    }
+
+    @Test
+    fun el_respaldo_devuelve_la_papelera_y_el_historial() = runBlocking {
+        // Una entrada que cambio de contrasena y otra que esta en la papelera:
+        // las dos cosas que la version 2 del formato existe para no perder.
+        val banco = dao().listaCompleta().first { it.titulo == "Banco" }
+        dao().actualiza(banco.copy(contrasena = "melon-43"))
+        val correo = dao().listaCompleta().first { it.titulo == "Correo" }
+        dao().mandaAPapelera(correo.id, 1_700_000_000_000)
+
+        assertEquals(GestorRespaldo.Exportacion.Ok(2), exporta())
+        dao().vacia()
+
+        val resultado = respaldo.importa(destino(), claveArchivo.toCharArray(), reemplazar = false)
+        assertEquals(GestorRespaldo.Importacion.Ok(2, 0), resultado)
+
+        val vueltas = dao().listaConPapelera().associateBy { it.titulo }
+        // Lo que estaba borrado vuelve borrado, con su fecha: restaurar un
+        // respaldo no puede deshacer un borrado que el usuario si quiso.
+        assertEquals(1_700_000_000_000, vueltas.getValue("Correo").eliminadoEn)
+        assertNull(vueltas.getValue("Banco").eliminadoEn)
+
+        val historial = dao().historialDe(vueltas.getValue("Banco").id).first()
+        assertEquals(2, historial.size)
+        assertEquals("melon-43", historial.first { it.actual }.contrasena)
+        assertTrue(historial.any { it.contrasena == "melon-42" && !it.actual })
+    }
+
+    @Test
+    fun importar_un_respaldo_no_revive_lo_que_esta_en_la_papelera() = runBlocking {
+        exporta()
+        val banco = dao().listaCompleta().first { it.titulo == "Banco" }
+        dao().mandaAPapelera(banco.id, System.currentTimeMillis())
+
+        val resultado = respaldo.importa(destino(), claveArchivo.toCharArray(), reemplazar = false)
+
+        // El archivo trae "Banco" activo, pero aqui ya se borro despues de
+        // hacerlo. Se omite: si entrara, quedarian dos —una activa y otra en la
+        // papelera— y el borrado se habria deshecho sin decir nada.
+        assertEquals(GestorRespaldo.Importacion.Ok(0, 2), resultado)
+        assertEquals(2, dao().listaConPapelera().size)
+        assertEquals(listOf("Correo"), dao().listaCompleta().map { it.titulo })
     }
 
     @Test

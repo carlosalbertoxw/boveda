@@ -5,8 +5,8 @@ Guardas una credencial, y cuando no recuerdas una entras, la ves o la copias.
 
 - **Paquete:** `com.carlosalbertoxw.boveda`
 - **minSdk 26 · targetSdk 36 · Kotlin + Jetpack Compose**
-- **Estado:** compila en debug y release, 56 pruebas unitarias en verde (criptografía, respaldo,
-  candado y preferencias) más dos suites instrumentadas de flujo.
+- **Estado:** compila en debug y release, 74 pruebas unitarias en verde (criptografía, respaldo,
+  candado, preferencias, papelera e historial) más cuatro suites instrumentadas de flujo.
 
 ---
 
@@ -24,13 +24,14 @@ Desde la terminal:
 JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:assembleDebug
 ```
 
-Las pruebas de la JVM (56, sin dispositivo):
+Las pruebas de la JVM (74, sin dispositivo):
 
 ```bash
 JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:testDebugUnitTest
 ```
 
-Las instrumentadas recorren el ciclo completo contra SQLCipher de verdad, así que piden un
+Las instrumentadas recorren el ciclo completo contra SQLCipher de verdad —incluida la
+migración del esquema, que es lo único capaz de perder datos en silencio—, así que piden un
 emulador o un teléfono conectado:
 
 ```bash
@@ -101,6 +102,7 @@ caminos independientes a la misma frase.
 | AES-256-GCM | Cifrado autenticado; la etiqueta es lo que verifica la contraseña | [Sobre.kt](app/src/main/java/com/carlosalbertoxw/boveda/seguridad/Sobre.kt) |
 | Keystore con `setUserAuthenticationRequired` | El chip se niega a descifrar sin huella válida | [AlmacenBiometrico.kt](app/src/main/java/com/carlosalbertoxw/boveda/seguridad/AlmacenBiometrico.kt) |
 | Freno exponencial + borrado opcional | 3 intentos gratis, luego 15 s → 5 min | [GestorBoveda.kt](app/src/main/java/com/carlosalbertoxw/boveda/seguridad/GestorBoveda.kt) |
+| Migraciones explícitas, nunca destructivas | `fallbackToDestructiveMigration` borraría la única copia que existe | [BovedaDatabase.kt](app/src/main/java/com/carlosalbertoxw/boveda/datos/BovedaDatabase.kt) |
 
 **La espera se mide con los dos relojes del sistema y se cruzan al leerla.** El monotónico no
 se deja mover cambiando la fecha del teléfono, pero se reinicia al apagarlo; el de pared
@@ -143,7 +145,11 @@ una pista extra para quien se lleve el archivo.
   ventana y no hereda ni el anti-*tapjacking* ni la exclusión de autofill de la Activity, así
   que se las aplica una por una `DialogoSeguro`. Es donde se teclea la maestra al exportar y
   donde se confirma el borrado, o sea justo donde más falta hacen.
-- La contraseña nunca aparece en el listado. Revelarla se vuelve a tapar sola a los 20 s.
+- La contraseña nunca aparece en el listado ni en la papelera. Revelarla se vuelve a tapar
+  sola a los 20 s.
+- **En el historial solo se puede descubrir una a la vez**: descubrir la siguiente tapa la
+  anterior. Es la pantalla con más secretos por centímetro de la app, y verlos todos juntos
+  no le sirve a nadie salvo a quien mire de reojo.
 - Cierre automático al pasar a segundo plano y por inactividad (configurable).
 
 ### Portapapeles
@@ -159,6 +165,54 @@ vivo en memoria —que además, al ser un `String`, no se podría poner en ceros
 
 ---
 
+## Papelera
+
+**Borrar no borra: aparta.** La entrada sale del listado y se queda en la papelera 30 días,
+con la cuenta atrás a la vista, hasta que venza el plazo o se destruya a mano con *Borrar
+ahora*. También se puede vaciar entera de golpe. Los dos caminos que sí destruyen piden
+confirmación.
+
+Es un borrado lógico —una columna `eliminadoEn` en la misma fila— y no una tabla aparte: una
+contraseña borrada por error sigue siendo una contraseña, así que merece el mismo cifrado, el
+mismo respaldo y el mismo historial que las demás. Moverla de tabla obligaría a duplicar todo
+eso justo para el caso en el que más duele equivocarse.
+
+**El plazo se cumple al abrir la bóveda**, que es el único momento en que la app tiene con
+qué descifrar. No hay ni puede haber una tarea programada que lo haga de madrugada: sin
+frase no hay base que purgar. Si nadie abre la app en meses, lo vencido sobrevive dentro del
+mismo archivo cifrado y se destruye en cuanto alguien vuelve a mirar.
+
+La papelera no muestra contraseñas, ni tapadas con puntos, ni deja copiarlas ni abrir el
+detalle: sirve para reconocer qué se borró y decidir si vuelve. Quien necesite la contraseña
+restaura primero.
+
+## Historial de contraseñas
+
+Cada entrada guarda las contraseñas que tuvo, con una marca en la que usa hoy. Desde el
+detalle → *Historial de contraseñas* se puede **mover esa marca a una anterior** (la entrada
+vuelve a usarla, sin crear una fila nueva: la marca se desplaza) y **borrar del historial una
+por una, para siempre**.
+
+**Por qué un gestor guarda contraseñas viejas.** Porque no se vuelven inofensivas el día que
+las cambias: siguen abriendo las sesiones que quedaron iniciadas, los respaldos hechos con
+ellas y las cuentas donde el cambio no llegó a aplicarse. Tenerlas dentro del archivo cifrado
+es lo que permite recuperar una cuenta cuando el cambio se hizo a medias. Y por eso mismo se
+pueden podar: si una ya no le sirve a nadie, lo mejor que se puede hacer con ella es que deje
+de existir.
+
+**La marca no puede discrepar de la entrada.** La verdad sobre qué contraseña usa la cuenta
+la tiene `Credencial.contrasena`; la marca dice cuál de las filas del historial le
+corresponde. Las dos se mueven dentro de la misma transacción del DAO, así que el estado
+descuadrado no existe ni un instante, ni aunque la bóveda se cierre a mitad. La marcada como
+actual no se puede borrar —la condición vive en el SQL, no en la pantalla—: dejaría a la
+entrada sin la fila que le corresponde.
+
+Toda entrada estrena historial al crearse, no al primer cambio. Si empezara al cambiar, la
+contraseña original —justo la que uno quiere recuperar— sería la única que nunca estuvo ahí.
+La migración de la base hace lo mismo con lo que ya estaba guardado.
+
+---
+
 ## Respaldo
 
 Un archivo `.json` con la cabecera legible y el contenido cifrado en AES-256-GCM, con su
@@ -167,7 +221,7 @@ propia contraseña y su propia sal:
 ```json
 {
   "formato": "boveda-respaldo",
-  "version": 1,
+  "version": 2,
   "creado": "2026-08-15T18:00:00Z",
   "entradas": 12,
   "kdf": { "algoritmo": "PBKDF2WithHmacSHA256", "iteraciones": 210000, "sal": "..." },
@@ -189,10 +243,31 @@ contraseñas; lo único que expone es cuántas entradas hay. Además va **autent
 AAD**: si alguien edita `iteraciones` a 1 para abaratarse un ataque por diccionario, el
 descifrado falla. Hay una prueba que lo verifica.
 
+**Qué lleva dentro (versión 2).** La bóveda entera: las entradas activas, las que están en la
+papelera con su fecha de borrado, y el historial de contraseñas de cada una. Un respaldo tiene
+que devolver la bóveda tal y como estaba, y "estaba" incluye lo que se borró anteayer y
+todavía se puede recuperar. Si el archivo no llevara la fecha de borrado, restaurarlo
+convertiría la papelera en entradas activas y desharía un borrado que el usuario sí quiso.
+
+**Los archivos de la versión 1 se siguen leyendo.** Son los que ya existen en los teléfonos de
+la gente, y un respaldo que deja de abrirse por actualizar la app es exactamente el fallo que
+un respaldo no puede tener. Al leerlos, cada entrada estrena historial con la única contraseña
+que trae el archivo y entra fuera de la papelera. La versión va dentro del AAD, así que
+tampoco se puede hacer pasar un archivo por uno de otra versión para que se lea con reglas
+distintas.
+
+**Lo que viene de fuera se normaliza antes de entrar.** Un archivo es texto que alguien pudo
+editar a mano: puede traer dos marcas de "actual", ninguna, o la marca puesta en una
+contraseña que la credencial ya no usa. `Respaldo.normaliza` deja exactamente una marca y la
+hace coincidir con la contraseña de la entrada, sin descartar nada de lo que el archivo traiga.
+
 **Cómo se usa.** Ajustes → Respaldo. Exportar pide la maestra otra vez (sacar todas las
 contraseñas de golpe es la operación más peligrosa de la app) más una contraseña para el
 archivo. Importar ofrece fusionar —omitiendo lo que ya está idéntico, para que importar dos
-veces no duplique la bóveda— o reemplazar todo.
+veces no duplique la bóveda— o reemplazar todo. Al fusionar se compara contra la bóveda
+entera, papelera incluida: si solo contara lo activo, importar dejaría una copia nueva al lado
+de la que acabas de borrar y el borrado se desharía solo. Lo que sigue en la papelera se
+recupera desde ahí, que es donde lo dejaste.
 
 **El acceso al disco va por el selector del sistema (SAF).** La app no pide permisos de
 almacenamiento, no ve el disco y no elige dónde escribir: recibe un `Uri` concreto que
@@ -244,15 +319,21 @@ app/src/main/java/com/carlosalbertoxw/boveda/
 │   ├── Generador.kt         Contraseñas con SecureRandom
 │   └── Portapapeles.kt      Copiado sensible con borrado automático
 ├── datos/
-│   ├── Credencial.kt        Entidad, BovedaDatabase.kt, CredencialDao.kt
+│   ├── Credencial.kt        Entidad; `eliminadoEn` nulo es "no está borrada"
+│   ├── HistorialContrasena.kt Contraseñas anteriores de una entrada, con la marca de actual
+│   ├── Papelera.kt          El plazo de 30 días, aparte y sin tocar la base (y por eso probable)
+│   ├── BovedaDatabase.kt    SQLCipher + migraciones explícitas, nunca destructivas
+│   ├── CredencialDao.kt     Listados y las transacciones que mueven las dos tablas juntas
 │   ├── Respaldo.kt          Formato del archivo: sobre JSON + AES-GCM con AAD
 │   └── GestorRespaldo.kt    Exportar/importar por SAF, fusión y deduplicado
 └── ui/
     ├── ModeloBoveda.kt      Único camino de la interfaz hacia la bóveda
     ├── ModeloRespaldo.kt    Exportar e importar, con su propio estado
+    ├── ModeloPapelera.kt    Restaurar, borrar de verdad y vaciar
     ├── Avisos.kt            Buzón único de mensajes para la barra de abajo
     ├── Mensajes.kt          Cómo se le cuenta al usuario lo que devolvió cada capa
-    └── pantallas/           Compose: alta, desbloqueo, listado, detalle, editor, ajustes
+    └── pantallas/           Compose: alta, desbloqueo, listado, detalle, editor,
+                             papelera, historial y ajustes
 ```
 
 La interfaz no toca preferencias ni el Keystore: todo lo que cruza esa línea pasa por un
@@ -266,6 +347,10 @@ método con nombre de `ModeloBoveda`, y los ajustes salen como estado observable
 | `RespaldoTest` | El formato del archivo: ida y vuelta completa, que nada viaje en claro y que bajar las iteraciones de la cabecera lo invalide |
 | `CandadoTest` | El freno a la fuerza bruta con un reloj falso: los tres intentos gratis, el crecimiento del castigo, el tope, y que ni reiniciar el teléfono ni cambiar la fecha lo alteren |
 | `PreferenciasBovedaTest` | Que sal, iteraciones y sobre viajen siempre juntos, que es lo que separa una bóveda legible de una perdida |
-| `FusionTest` | Que importar dos veces el mismo archivo no duplique la bóveda |
+| `FusionTest` | Que importar dos veces el mismo archivo no duplique la bóveda, ni siquiera contra lo que está en la papelera |
+| `PapeleraTest` | La aritmética del plazo de 30 días, con el reloj como parámetro en vez de esperar un mes |
+| `HistorialTest` | Que un historial venido de fuera entre siempre con una sola marca de "actual" y coincidiendo con la entrada |
 | `FlujoBovedaTest` *(instrumentada)* | El ciclo completo contra SQLCipher real, incluido que el `.db` no contenga nada legible |
-| `FlujoRespaldoTest` *(instrumentada)* | Exportar y recuperar tras vaciar la bóveda, y que exportar exija la maestra |
+| `FlujoRespaldoTest` *(instrumentada)* | Exportar y recuperar tras vaciar la bóveda, que la papelera y el historial vuelvan enteros, y que exportar exija la maestra |
+| `FlujoPapeleraTest` *(instrumentada)* | Borrar, restaurar, purgar por plazo y mover la marca del historial, con transacciones de verdad |
+| `MigracionTest` *(instrumentada)* | Que pasar de la versión 1 a la 2 no pierda ninguna entrada y le abra historial a las que ya estaban |
