@@ -1,7 +1,9 @@
 # Bóveda
 
 Gestor de contraseñas para Android, sin conexión y sin comunicación con otras apps.
-Guardas una credencial, y cuando no recuerdas una entras, la ves o la copias.
+Guardas una credencial, y cuando no recuerdas una entras, la ves o la copias. Tiene una
+[versión de escritorio](../boveda-desktop) en el mismo repositorio, con el mismo formato de
+respaldo.
 
 - **Paquete:** `com.carlosalbertoxw.boveda`
 - **minSdk 26 · targetSdk 36 · Kotlin + Jetpack Compose**
@@ -11,6 +13,10 @@ Guardas una credencial, y cuando no recuerdas una entras, la ves o la copias.
 ---
 
 ## Cómo se construye
+
+Los comandos se lanzan desde esta carpeta (`boveda-android/`), que es una build de Gradle
+independiente de la de escritorio; en Android Studio se abre esta carpeta, no la raíz del
+repositorio.
 
 Requiere **JDK 21**. El JBR 25 que trae el Android Studio actual rompe AGP 8.10 con un
 error ilegible (`* What went wrong: 25.0.2`). La ruta al JDK vive en la configuración
@@ -56,7 +62,7 @@ de forma interactiva, así que no quedan en el historial de la terminal:
 "/c/Program Files/Android/Android Studio/jbr/bin/keytool" -genkeypair -v -keystore boveda-release.jks -alias boveda -keyalg RSA -keysize 4096 -validity 10000 -storetype PKCS12
 ```
 
-**2. Crear `keystore.properties`** en la raíz, copiando `keystore.properties.template` y
+**2. Crear `keystore.properties`** en `boveda-android/` (no en la raíz del repositorio), copiando `keystore.properties.template` y
 rellenando las contraseñas:
 
 ```
@@ -269,7 +275,7 @@ de la que acabas de borrar y el borrado se desharía solo. Lo que sigue en la pa
 recupera desde ahí, que es donde lo dejaste.
 
 **Conflictos al fusionar.** Pasar respaldos entre el teléfono y la computadora después de cambiar
-una contraseña en uno de los dos es el caso normal. La regla es idéntica en la app de escritorio,
+una contraseña en uno de los dos es el caso normal. La regla es idéntica en la [app de escritorio](../boveda-desktop/README.md),
 con la misma `FusionTest`:
 
 - **La cuenta es título + usuario**, sin distinguir mayúsculas ni espacios de sobra. El título solo

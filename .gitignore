@@ -1,0 +1,28 @@
+# Reglas comunes a todo el repositorio. Cada app tiene ademas su propio
+# .gitignore con lo especifico de su build (boveda-android/, boveda-desktop/).
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE: abrir la raiz del repositorio en Android Studio o IntelliJ tambien
+# genera configuracion local que no debe versionarse.
+.idea/
+*.iml
+.vscode/
+
+# Gradle y Kotlin, por si alguien lanza una build desde la raiz.
+.gradle/
+.kotlin/
+build/
+local.properties
+
+# Firma: nunca al repositorio, este donde este. Se repite aqui para que un
+# keystore copiado por error a otra carpeta tampoco se cuele.
+keystore.properties
+*.jks
+*.keystore
+
+# Bovedas de prueba y respaldos exportados: van cifrados, pero no son codigo.
+datos-prueba/
