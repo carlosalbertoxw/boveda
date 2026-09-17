@@ -180,6 +180,33 @@ class FlujoRespaldoTest {
     }
 
     @Test
+    fun un_cambio_de_contrasena_de_otro_equipo_actualiza_la_cuenta_sin_duplicarla() = runBlocking {
+        // En el telefono solo cabe una boveda, asi que el "otro equipo" se
+        // simula con dos respaldos: uno de antes del cambio y otro de despues.
+        val antes = File(contexto.cacheDir, "respaldo-antes.json").apply { delete() }
+        respaldo.exporta(Uri.fromFile(antes), maestra.toCharArray(), claveArchivo.toCharArray())
+
+        val banco = dao().listaCompleta().first { it.titulo == "Banco" }
+        dao().actualiza(banco.copy(contrasena = "melon-2027", actualizadoEn = banco.actualizadoEn + 60_000))
+        assertEquals(GestorRespaldo.Exportacion.Ok(2), exporta())
+
+        // Este equipo vuelve a como estaba antes del cambio...
+        respaldo.importa(Uri.fromFile(antes), claveArchivo.toCharArray(), reemplazar = true)
+        antes.delete()
+
+        // ...y recibe el respaldo del otro, que trae la contrasena nueva.
+        val resultado = respaldo.importa(destino(), claveArchivo.toCharArray(), reemplazar = false)
+
+        assertEquals(GestorRespaldo.Importacion.Ok(agregadas = 0, omitidas = 1, actualizadas = 1), resultado)
+        val cuentas = dao().listaCompleta().filter { it.titulo == "Banco" }
+        assertEquals(1, cuentas.size)
+        assertEquals("melon-2027", cuentas.single().contrasena)
+        val historial = dao().historialDe(cuentas.single().id).first()
+        assertEquals("melon-2027", historial.single { it.actual }.contrasena)
+        assertTrue(historial.any { it.contrasena == "melon-42" })
+    }
+
+    @Test
     fun el_archivo_exportado_no_lleva_nada_en_claro() = runBlocking {
         exporta()
 

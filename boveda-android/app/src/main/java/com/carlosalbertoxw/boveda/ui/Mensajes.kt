@@ -41,16 +41,17 @@ fun mensajeDe(contexto: Context, resultado: GestorRespaldo.Exportacion): String 
 }
 
 fun mensajeDe(contexto: Context, resultado: GestorRespaldo.Importacion): String = when (resultado) {
-    is GestorRespaldo.Importacion.Ok ->
-        if (resultado.omitidas > 0) {
-            contexto.getString(
-                R.string.aviso_importadas_con_omitidas,
-                resultado.agregadas,
-                resultado.omitidas
-            )
-        } else {
-            contexto.getString(R.string.aviso_importadas, resultado.agregadas)
+    is GestorRespaldo.Importacion.Ok -> buildString {
+        append(contexto.getString(R.string.aviso_importadas, resultado.agregadas))
+        if (resultado.actualizadas > 0) {
+            append(" ")
+            append(contexto.getString(R.string.aviso_actualizadas, resultado.actualizadas))
         }
+        if (resultado.omitidas > 0) {
+            append(" ")
+            append(contexto.getString(R.string.aviso_omitidas, resultado.omitidas))
+        }
+    }
     is GestorRespaldo.Importacion.ContrasenaIncorrecta ->
         contexto.getString(R.string.aviso_importar_clave_incorrecta)
     is GestorRespaldo.Importacion.NoEsUnRespaldo ->

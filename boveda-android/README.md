@@ -5,7 +5,7 @@ Guardas una credencial, y cuando no recuerdas una entras, la ves o la copias.
 
 - **Paquete:** `com.carlosalbertoxw.boveda`
 - **minSdk 26 · targetSdk 36 · Kotlin + Jetpack Compose**
-- **Estado:** compila en debug y release, 74 pruebas unitarias en verde (criptografía, respaldo,
+- **Estado:** compila en debug y release, 83 pruebas unitarias en verde (criptografía, respaldo,
   candado, preferencias, papelera e historial) más cuatro suites instrumentadas de flujo.
 
 ---
@@ -24,7 +24,7 @@ Desde la terminal:
 JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:assembleDebug
 ```
 
-Las pruebas de la JVM (74, sin dispositivo):
+Las pruebas de la JVM (83, sin dispositivo):
 
 ```bash
 JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:testDebugUnitTest
@@ -263,11 +263,26 @@ hace coincidir con la contraseña de la entrada, sin descartar nada de lo que el
 
 **Cómo se usa.** Ajustes → Respaldo. Exportar pide la maestra otra vez (sacar todas las
 contraseñas de golpe es la operación más peligrosa de la app) más una contraseña para el
-archivo. Importar ofrece fusionar —omitiendo lo que ya está idéntico, para que importar dos
-veces no duplique la bóveda— o reemplazar todo. Al fusionar se compara contra la bóveda
+archivo. Importar ofrece fusionar o reemplazar todo. Al fusionar se compara contra la bóveda
 entera, papelera incluida: si solo contara lo activo, importar dejaría una copia nueva al lado
 de la que acabas de borrar y el borrado se desharía solo. Lo que sigue en la papelera se
 recupera desde ahí, que es donde lo dejaste.
+
+**Conflictos al fusionar.** Pasar respaldos entre el teléfono y la computadora después de cambiar
+una contraseña en uno de los dos es el caso normal. La regla es idéntica en la app de escritorio,
+con la misma `FusionTest`:
+
+- **La cuenta es título + usuario**, sin distinguir mayúsculas ni espacios de sobra. El título solo
+  no basta: dos «Correo» (personal y trabajo) se fusionarían y una contraseña pisaría a la otra.
+- **Mismo contenido:** se omite, así importar dos veces no duplica ni reescribe nada. Que solo
+  cambien las fechas no cuenta como conflicto.
+- **Datos distintos:** título, usuario, contraseña, sitio y notas salen de la versión con
+  `actualizadoEn` más reciente (si empatan, gana la local). **Ninguna contraseña se pierde:** la de
+  la versión que no gana y las viejas que traiga el archivo entran al historial, con la marca de
+  "actual" en la que ganó.
+- **Papelera:** lo que borraste aquí sigue borrado aunque el archivo lo traiga activo.
+- **Duplicados:** la misma cuenta repetida en el archivo se combina consigo misma primero; si la
+  bóveda ya la tenía repetida, se combina con la que coincide en contraseña y las demás no se tocan.
 
 **El acceso al disco va por el selector del sistema (SAF).** La app no pide permisos de
 almacenamiento, no ve el disco y no elige dónde escribir: recibe un `Uri` concreto que
@@ -347,7 +362,7 @@ método con nombre de `ModeloBoveda`, y los ajustes salen como estado observable
 | `RespaldoTest` | El formato del archivo: ida y vuelta completa, que nada viaje en claro y que bajar las iteraciones de la cabecera lo invalide |
 | `CandadoTest` | El freno a la fuerza bruta con un reloj falso: los tres intentos gratis, el crecimiento del castigo, el tope, y que ni reiniciar el teléfono ni cambiar la fecha lo alteren |
 | `PreferenciasBovedaTest` | Que sal, iteraciones y sobre viajen siempre juntos, que es lo que separa una bóveda legible de una perdida |
-| `FusionTest` | Que importar dos veces el mismo archivo no duplique la bóveda, ni siquiera contra lo que está en la papelera |
+| `FusionTest` | Conflictos al importar: misma cuenta por título + usuario, gana la versión más reciente y ninguna contraseña se pierde (idéntica en escritorio) |
 | `PapeleraTest` | La aritmética del plazo de 30 días, con el reloj como parámetro en vez de esperar un mes |
 | `HistorialTest` | Que un historial venido de fuera entre siempre con una sola marca de "actual" y coincidiendo con la entrada |
 | `FlujoBovedaTest` *(instrumentada)* | El ciclo completo contra SQLCipher real, incluido que el `.db` no contenga nada legible |

@@ -185,7 +185,7 @@
     <string name="importar_clave">Contraseña del archivo</string>
     <string name="importar_reemplazar">Reemplazar todo lo que tengo</string>
     <string name="importar_explicacion_reemplazar">Se borran las entradas actuales —con su historial y su papelera— y quedan solo las del archivo.</string>
-    <string name="importar_explicacion_fusionar">Se agregan al final, cada una con su historial. Lo que ya esté idéntico no se duplica, ni siquiera si lo tienes en la papelera.</string>
+    <string name="importar_explicacion_fusionar">Una entrada con el mismo título y usuario se considera la misma cuenta: no se duplica. Si trae datos distintos, se queda la versión modificada más recientemente y la otra contraseña pasa a su historial. Lo que borraste aquí sigue en la papelera.</string>
     <string name="importar_confirmar">Importar</string>
 
     <!-- Diálogo: borrado total -->
@@ -229,8 +229,9 @@
     <string name="aviso_respaldo_creado">Respaldo creado con %1$d entradas.</string>
     <string name="aviso_respaldo_maestra_incorrecta">La contraseña maestra no es correcta.</string>
     <string name="aviso_respaldo_boveda_cerrada">La bóveda se cerró antes de terminar.</string>
-    <string name="aviso_importadas">Importadas %1$d entradas.</string>
-    <string name="aviso_importadas_con_omitidas">Importadas %1$d. Se omitieron %2$d que ya estaban.</string>
+    <string name="aviso_importadas">Importadas %1$d entradas nuevas.</string>
+    <string name="aviso_actualizadas">Se actualizaron %1$d con la versión más reciente; las contraseñas anteriores quedan en su historial.</string>
+    <string name="aviso_omitidas">Se omitieron %1$d que ya estaban.</string>
     <string name="aviso_importar_clave_incorrecta">La contraseña del archivo no es correcta, o el archivo fue alterado.</string>
     <string name="aviso_importar_no_es_respaldo">Ese archivo no es un respaldo de Bóveda.</string>
 

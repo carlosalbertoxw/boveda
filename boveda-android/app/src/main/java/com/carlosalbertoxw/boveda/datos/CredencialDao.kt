@@ -130,6 +130,26 @@ abstract class CredencialDao {
     }
 
     /**
+     * Sustituye una entrada que ya existe y su historial entero, de una pieza.
+     * Es el camino de la importacion cuando el archivo trae la misma cuenta
+     * con datos distintos ([GestorRespaldo.Fusion.combina]): la credencial y la
+     * marca de "actual" cambian juntas o no cambian.
+     *
+     * El historial se reetiqueta con ids nuevos, igual que en
+     * [insertaConHistorial]: los que trae la combinacion no significan nada.
+     */
+    @Transaction
+    open suspend fun reemplazaConHistorial(
+        credencial: Credencial,
+        historial: List<HistorialContrasena>
+    ) {
+        if (filaPorId(credencial.id) == null) return
+        actualizaFila(credencial)
+        borraHistorialDe(credencial.id)
+        insertaEnHistorial(historial.map { it.copy(id = 0, credencialId = credencial.id) })
+    }
+
+    /**
      * Mueve la marca a una contrasena anterior y la vuelve la de la entrada.
      *
      * No se crea una fila nueva: la marca se desplaza a la que ya estaba. Si se
