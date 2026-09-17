@@ -1,0 +1,12 @@
+*.iml
+.gradle/
+.kotlin/
+/.idea/
+.DS_Store
+# Sin barra inicial: tambien cubre cualquier modulo futuro.
+build/
+local.properties
+
+# Una boveda de pruebas creada con -Dboveda.datos dentro del proyecto no debe
+# acabar en el repositorio, aunque vaya cifrada.
+/datos-prueba/

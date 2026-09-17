@@ -1,0 +1,25 @@
+[versions]
+# Las mismas versiones de Kotlin y corrutinas que la app de Android: la logica
+# de seguridad y de datos se porto casi linea por linea, y conviene que compile
+# con el mismo compilador.
+kotlin = "2.1.20"
+compose = "1.8.0"
+coroutines = "1.10.1"
+# org.json es la misma API que Android trae de fabrica. Usarla aqui mantiene el
+# formato del respaldo identico byte a byte, incluidos los espacios de toString(2).
+json = "20250107"
+# Solo para pedirle a Windows que excluya la ventana de capturas de pantalla.
+jna = "5.16.0"
+junit = "4.13.2"
+
+[libraries]
+kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "coroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+json = { group = "org.json", name = "json", version.ref = "json" }
+jna-platform = { group = "net.java.dev.jna", name = "jna-platform", version.ref = "jna" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose = { id = "org.jetbrains.compose", version.ref = "compose" }

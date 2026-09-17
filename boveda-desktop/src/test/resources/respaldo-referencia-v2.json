@@ -1,0 +1,13 @@
+{
+  "formato": "boveda-respaldo",
+  "version": 2,
+  "creado": "2026-08-15T18:00:00Z",
+  "entradas": 2,
+  "kdf": {
+    "algoritmo": "PBKDF2WithHmacSHA256",
+    "iteraciones": 210000,
+    "sal": "AwoRGB8mLTQ7QklQV15lbA=="
+  },
+  "cifrado": "AES-256-GCM",
+  "datos": "BRAbJjE8R1JdaHN+/6aMy3pxBDJ1PGd1KPqXBst9zGUdHZgY5aWk0VB9Z29ZZjrLSVz2UDSU9rdQNZ4VMUuLR0eLgFIUKWIidXV1BVB5gL1UwnEE1F22O3bjSNW7ytReUR0OH9v58ZH1pCL/izuYtr9JrUYACag3k8J0AJ2iMV64kxG5niydFdVBOhM7MNPgzTCwwH9P64I2z/h1hK0rkeNQgoVDMnMmv9le7Adi0TFmbMfv9sJxCjiyTG1q+Dmvw3CrhNj9MHElmOBeIsBm/nfe60IGxZap1cwW87vd9VWNV9pfM4fp1o/u64v4RNNisGCpGHs8L33+ovwT8lM3PSrfOqUhVBAqqDU+fYmqzQSvu2ADvgM83hRu8nzkES625C8SAlAoxnyVyvE5RqLaUmQhaXmtvv1PdllkFW9+JLNwGfdiqlazJoRMQPWq/aBBRx37vgmowOMlN4GnsTFYIm2/Qij0ENEAVGkZ2pgxm8EBJ89li/goJh8qJv/UuPKQ/wnj62qFd0jBeUT6RSefMoWB8jg1jB//QzxPcArkmaDt1MjdEEIovxMuD2/qzcBZzlOd6BwILv8tTxAWxE5J3duIIRJulqke91XiRoOKJjTKvmhsPQoAJ2H5cXg6f+uFfcGfDNuoJy037nJJVrhPVarBjqp6HI1SyFh4wRcj3my1EfK7UQKexWUN8twg8XIsmAYPmvXSn9IuKvWZaOMkkfuQCiMXd2hRXG1aN+/0/K3Y8zX5nmv5PLMj7sEiyRwPqZiaaPK0GxIlpUtWGsM2m5ymWtcI8jqb0e6b7qMFO5sWF1GqpiFwpcWbV9YEP1yPa8Tx2od6Fa4dxlQx0eJ1WGoZkiLn2nOSLk/398Q41r9ct24WzP9v"
+}
