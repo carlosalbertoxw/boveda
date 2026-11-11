@@ -37,13 +37,16 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
+      # La cache de Gradle de setup-java, y no gradle/actions/setup-gradle: esa
+      # accion inyecta un init script con plugins propios, y la verificacion de
+      # dependencias (gradle/verification-metadata.xml) los rechaza.
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
-      # Ademas de la cache, valida que gradle-wrapper.jar sea uno publicado por
-      # Gradle y no uno alterado.
-      - uses: gradle/actions/setup-gradle@v6
+          cache: gradle
+      # Que gradle-wrapper.jar sea uno publicado por Gradle y no uno alterado.
+      - uses: gradle/actions/wrapper-validation@v6
 
       # El nucleo se prueba en los tres sistemas: es donde vive la criptografia,
       # y el proveedor de JCE de cada plataforma tiene que dar los mismos bytes.
@@ -73,11 +76,16 @@ jobs:
         working-directory: boveda-android
     steps:
       - uses: actions/checkout@v7
+      # La cache de Gradle de setup-java, y no gradle/actions/setup-gradle: esa
+      # accion inyecta un init script con plugins propios, y la verificacion de
+      # dependencias (gradle/verification-metadata.xml) los rechaza.
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
-      - uses: gradle/actions/setup-gradle@v6
+          cache: gradle
+      # Que gradle-wrapper.jar sea uno publicado por Gradle y no uno alterado.
+      - uses: gradle/actions/wrapper-validation@v6
 
       # El release sale sin firmar: el keystore no vive en el repositorio ni en
       # los secretos del CI. Compilarlo igual comprueba que R8 no rompa nada.

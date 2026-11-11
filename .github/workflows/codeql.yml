@@ -19,11 +19,16 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v7
+      # La cache de Gradle de setup-java, y no gradle/actions/setup-gradle: esa
+      # accion inyecta un init script con plugins propios, y la verificacion de
+      # dependencias (gradle/verification-metadata.xml) los rechaza.
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
-      - uses: gradle/actions/setup-gradle@v6
+          cache: gradle
+      # Que gradle-wrapper.jar sea uno publicado por Gradle y no uno alterado.
+      - uses: gradle/actions/wrapper-validation@v6
 
       - uses: github/codeql-action/init@v4
         with:
