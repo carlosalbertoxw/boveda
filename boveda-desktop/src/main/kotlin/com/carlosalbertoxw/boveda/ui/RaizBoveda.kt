@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -20,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isMetaPressed
@@ -97,21 +99,7 @@ private fun BovedaAbierta(aplicacion: AplicacionBoveda, modelo: ModeloBoveda) {
     // Atajos de teclado de escritorio. Viven con la boveda abierta y se
     // retiran al cerrarla: con el candado puesto no hay nada a lo que ir.
     DisposableEffect(Unit) {
-        aplicacion.atajos = { evento ->
-            val control = evento.isCtrlPressed || evento.isMetaPressed
-            if (evento.type != KeyEventType.KeyDown) {
-                false
-            } else when {
-                control && evento.key == Key.L -> { modelo.bloquea(); true }
-                control && evento.key == Key.N -> { ve(Destino.Editor(0)); true }
-                control && evento.key == Key.F && pila.last() == Destino.Listado -> {
-                    runCatching { focoBusqueda.requestFocus() }
-                    true
-                }
-                evento.key == Key.Escape && pila.size > 1 -> { vuelve(); true }
-                else -> false
-            }
-        }
+        aplicacion.atajos = { evento -> atajo(evento, pila, modelo, focoBusqueda) }
         onDispose { aplicacion.atajos = null }
     }
 
@@ -135,5 +123,29 @@ private fun BovedaAbierta(aplicacion: AplicacionBoveda, modelo: ModeloBoveda) {
         Destino.Papelera -> PantallaPapelera(aplicacion, alVolver = ::vuelve)
         is Destino.Editor -> PantallaEditor(modelo, destino.id, alVolver = ::vuelve)
         Destino.Ajustes -> PantallaAjustes(aplicacion, modelo, alVolver = ::vuelve)
+    }
+}
+
+/**
+ * Ctrl+L cierra la boveda, Ctrl+N crea una entrada, Ctrl+F va al buscador y Esc
+ * vuelve atras. Devuelve si la tecla era un atajo, para que no siga de largo.
+ */
+private fun atajo(
+    evento: KeyEvent,
+    pila: SnapshotStateList<Destino>,
+    modelo: ModeloBoveda,
+    focoBusqueda: FocusRequester
+): Boolean {
+    if (evento.type != KeyEventType.KeyDown) return false
+    val control = evento.isCtrlPressed || evento.isMetaPressed
+    return when {
+        control && evento.key == Key.L -> { modelo.bloquea(); true }
+        control && evento.key == Key.N -> { pila.add(Destino.Editor(0)); true }
+        control && evento.key == Key.F && pila.last() == Destino.Listado -> {
+            runCatching { focoBusqueda.requestFocus() }
+            true
+        }
+        evento.key == Key.Escape && pila.size > 1 -> { pila.removeAt(pila.lastIndex); true }
+        else -> false
     }
 }

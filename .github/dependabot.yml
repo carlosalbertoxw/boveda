@@ -1,0 +1,31 @@
+# Propone actualizaciones pequenas y frecuentes, en vez de dejar que el atraso
+# crezca hasta volverse una migracion. Las versiones viven en el
+# gradle/libs.versions.toml de cada build.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directories:
+      - /boveda-android
+      - /boveda-desktop
+      - /boveda-nucleo
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      # Kotlin, KSP y el compilador de Compose tienen que subir juntos.
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "com.google.devtools.ksp*"
+      androidx:
+        patterns:
+          - "androidx.*"
+          - "com.android.*"
+      menores:
+        update-types:
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

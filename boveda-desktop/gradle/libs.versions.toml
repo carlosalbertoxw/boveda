@@ -10,6 +10,7 @@ json = "20260814"
 # Solo para pedirle a Windows que excluya la ventana de capturas de pantalla.
 jna = "5.19.1"
 junit = "4.13.2"
+detekt = "1.23.8"
 
 [libraries]
 # El codigo compartido con Android: cripto, formato del respaldo, fusion y
@@ -26,3 +27,4 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 compose = { id = "org.jetbrains.compose", version.ref = "compose" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

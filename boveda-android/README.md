@@ -3,12 +3,11 @@
 Gestor de contraseñas para Android, sin conexión y sin comunicación con otras apps.
 Guardas una credencial, y cuando no recuerdas una entras, la ves o la copias. Tiene una
 [versión de escritorio](../boveda-desktop) en el mismo repositorio, con el mismo formato de
-respaldo.
+respaldo; el código que comparten (criptografía, formato del respaldo, fusión y papelera) vive en
+[`boveda-nucleo/`](../boveda-nucleo).
 
 - **Paquete:** `com.carlosalbertoxw.boveda`
-- **minSdk 26 · targetSdk 36 · Kotlin + Jetpack Compose**
-- **Estado:** compila en debug y release, 83 pruebas unitarias en verde (criptografía, respaldo,
-  candado, preferencias, papelera e historial) más cuatro suites instrumentadas de flujo.
+- **minSdk 26 · targetSdk 36 · compileSdk 37 · Kotlin + Jetpack Compose**
 
 ---
 
@@ -18,22 +17,17 @@ Los comandos se lanzan desde esta carpeta (`boveda-android/`), que es una build 
 independiente de la de escritorio; en Android Studio se abre esta carpeta, no la raíz del
 repositorio.
 
-Requiere **JDK 21**. El JBR 25 que trae el Android Studio actual rompe AGP 8.10 con un
-error ilegible (`* What went wrong: 25.0.2`). La ruta al JDK vive en la configuración
-local de Android Studio (`.idea/`, `.gradle/`), que no se versiona: en un clon nuevo hay
-que volver a apuntarla en *Settings → Build Tools → Gradle → Gradle JDK*, o pasar
-`JAVA_HOME` en cada invocación como en los ejemplos de abajo.
-
-Desde la terminal:
+Requiere un **JDK 17 o posterior**; sirve el que trae Android Studio. Desde la terminal:
 
 ```bash
-JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:assembleDebug
+./gradlew :app:assembleDebug
 ```
 
-Las pruebas de la JVM (83, sin dispositivo):
+Las pruebas de la JVM, sin dispositivo (las del núcleo compartido se lanzan aparte, con
+`./gradlew :boveda-nucleo:test`):
 
 ```bash
-JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:testDebugUnitTest
+./gradlew :app:testDebugUnitTest
 ```
 
 Las instrumentadas recorren el ciclo completo contra SQLCipher de verdad —incluida la
@@ -41,14 +35,18 @@ migración del esquema, que es lo único capaz de perder datos en silencio—, a
 emulador o un teléfono conectado:
 
 ```bash
-JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:connectedDebugAndroidTest
+./gradlew :app:connectedDebugAndroidTest
 ```
 
-El linter:
+Los analizadores: detekt revisa el estilo y la complejidad del Kotlin, y lint de Android lo
+propio de la plataforma, como usar una API que no existe en las versiones que la app soporta
+(minSdk 26). Los dos corren en el CI y lo hacen fallar:
 
 ```bash
-JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:detekt
+./gradlew :app:detekt :app:lintDebug
 ```
+
+La configuración de detekt es la misma para todo el repositorio: [config/detekt.yml](../config/detekt.yml).
 
 ### Firmar el release
 
@@ -75,7 +73,7 @@ keyPassword=...
 Con eso, `assembleRelease` firma el APK (v2 + v3; v1 no hace falta con `minSdk 26`):
 
 ```bash
-JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew :app:assembleRelease
+./gradlew :app:assembleRelease
 ```
 
 El APK sale en `app/build/outputs/apk/release/app-release.apk`. Sin
@@ -104,17 +102,21 @@ caminos independientes a la misma frase.
 | Capa | Qué hace | Dónde |
 |---|---|---|
 | SQLCipher (AES-256) | El archivo `.db` es ruido sin la frase | [BovedaDatabase.kt](app/src/main/java/com/carlosalbertoxw/boveda/datos/BovedaDatabase.kt) |
-| PBKDF2-HMAC-SHA256, 210 000 iteraciones | Cada intento de adivinar cuesta trabajo real | [Kdf.kt](app/src/main/java/com/carlosalbertoxw/boveda/seguridad/Kdf.kt) |
-| AES-256-GCM | Cifrado autenticado; la etiqueta es lo que verifica la contraseña | [Sobre.kt](app/src/main/java/com/carlosalbertoxw/boveda/seguridad/Sobre.kt) |
+| PBKDF2-HMAC-SHA256, 600 000 iteraciones | Cada intento de adivinar cuesta trabajo real | [Kdf.kt](../boveda-nucleo/src/main/kotlin/com/carlosalbertoxw/boveda/seguridad/Kdf.kt) |
+| AES-256-GCM | Cifrado autenticado; la etiqueta es lo que verifica la contraseña | [Sobre.kt](../boveda-nucleo/src/main/kotlin/com/carlosalbertoxw/boveda/seguridad/Sobre.kt) |
 | Keystore con `setUserAuthenticationRequired` | El chip se niega a descifrar sin huella válida | [AlmacenBiometrico.kt](app/src/main/java/com/carlosalbertoxw/boveda/seguridad/AlmacenBiometrico.kt) |
 | Freno exponencial + borrado opcional | 3 intentos gratis, luego 15 s → 5 min | [GestorBoveda.kt](app/src/main/java/com/carlosalbertoxw/boveda/seguridad/GestorBoveda.kt) |
 | Migraciones explícitas, nunca destructivas | `fallbackToDestructiveMigration` borraría la única copia que existe | [BovedaDatabase.kt](app/src/main/java/com/carlosalbertoxw/boveda/datos/BovedaDatabase.kt) |
 
 **La espera se mide con los dos relojes del sistema y se cruzan al leerla.** El monotónico no
 se deja mover cambiando la fecha del teléfono, pero se reinicia al apagarlo; el de pared
-sobrevive al apagón, pero se puede atrasar a mano. Guardando ambos, adelantar la fecha no
-saltea el castigo y reiniciar no lo alarga: si uno de los dos pide más de lo que dura el
-castigo más largo posible, es que se movió por debajo y manda el otro. Está probado en
+sobrevive al apagón, pero se puede mover a mano. Guardando ambos, adelantar la fecha no
+saltea el castigo y atrasarla no lo alarga más allá del castigo más largo posible.
+
+**Reiniciar a mitad de una espera la vuelve a empezar.** Tras un reinicio solo queda el reloj
+de pared, y no hay forma de distinguir el tiempo que de verdad pasó de un cambio de fecha: si
+se confiara en él, reiniciar y adelantar la fecha anularía el freno. Así que el castigo se arma
+otra vez entero, como mucho cinco minutos. Todo está probado en
 [CandadoTest](app/src/test/java/com/carlosalbertoxw/boveda/CandadoTest.kt).
 
 **Las iteraciones se ponen al día solas.** Se guardan junto a la sal, y al desbloquear con la
@@ -230,7 +232,7 @@ propia contraseña y su propia sal:
   "version": 2,
   "creado": "2026-08-15T18:00:00Z",
   "entradas": 12,
-  "kdf": { "algoritmo": "PBKDF2WithHmacSHA256", "iteraciones": 210000, "sal": "..." },
+  "kdf": { "algoritmo": "PBKDF2WithHmacSHA256", "iteraciones": 600000, "sal": "..." },
   "cifrado": "AES-256-GCM",
   "datos": "base64( iv || texto cifrado || etiqueta )"
 }
@@ -262,6 +264,10 @@ que trae el archivo y entra fuera de la papelera. La versión va dentro del AAD,
 tampoco se puede hacer pasar un archivo por uno de otra versión para que se lea con reglas
 distintas.
 
+**Un archivo que pida más de 10 millones de iteraciones se rechaza** antes de derivar nada: la
+derivación ocurre antes de poder comprobar la cabecera, y un archivo hecho a propósito podría
+dejar la app calculando durante horas.
+
 **Lo que viene de fuera se normaliza antes de entrar.** Un archivo es texto que alguien pudo
 editar a mano: puede traer dos marcas de "actual", ninguna, o la marca puesta en una
 contraseña que la credencial ya no usa. `Respaldo.normaliza` deja exactamente una marca y la
@@ -276,7 +282,7 @@ recupera desde ahí, que es donde lo dejaste.
 
 **Conflictos al fusionar.** Pasar respaldos entre el teléfono y la computadora después de cambiar
 una contraseña en uno de los dos es el caso normal. La regla es idéntica en la [app de escritorio](../boveda-desktop/README.md),
-con la misma `FusionTest`:
+porque las dos usan el mismo [Fusion.kt](../boveda-nucleo/src/main/kotlin/com/carlosalbertoxw/boveda/datos/Fusion.kt):
 
 - **La cuenta es título + usuario**, sin distinguir mayúsculas ni espacios de sobra. El título solo
   no basta: dos «Correo» (personal y trabajo) se fusionarían y una contraseña pisaría a la otra.
@@ -330,23 +336,18 @@ app/src/main/java/com/carlosalbertoxw/boveda/
 ├── AplicacionBoveda.kt      Estado del candado, colgado del proceso (no de la Activity)
 ├── MainActivity.kt          FLAG_SECURE, anti-tapjacking, inactividad
 ├── seguridad/
-│   ├── Sobre.kt             AES-256-GCM
-│   ├── Kdf.kt               PBKDF2 + medidor de fuerza
 │   ├── Reloj.kt             Los dos relojes, tras una interfaz (y por eso probables)
 │   ├── AlmacenBiometrico.kt Llave del Keystore ligada a la huella
 │   ├── Biometria.kt         BiometricPrompt, siempre con CryptoObject
-│   ├── GestorBoveda.kt      Abrir, cerrar, cambiar maestra, borrar
+│   ├── GestorBoveda.kt      Abrir, cerrar, cambiar maestra, borrar, freno a la fuerza bruta
 │   ├── PreferenciasBoveda.kt Sal, envolturas y ajustes
-│   ├── Generador.kt         Contraseñas con SecureRandom
 │   └── Portapapeles.kt      Copiado sensible con borrado automático
 ├── datos/
-│   ├── Credencial.kt        Entidad; `eliminadoEn` nulo es "no está borrada"
-│   ├── HistorialContrasena.kt Contraseñas anteriores de una entrada, con la marca de actual
-│   ├── Papelera.kt          El plazo de 30 días, aparte y sin tocar la base (y por eso probable)
+│   ├── CredencialFila.kt    La tabla `credenciales` tal y como la ve Room
+│   ├── HistorialFila.kt     La tabla `historial_contrasenas`
 │   ├── BovedaDatabase.kt    SQLCipher + migraciones explícitas, nunca destructivas
 │   ├── CredencialDao.kt     Listados y las transacciones que mueven las dos tablas juntas
-│   ├── Respaldo.kt          Formato del archivo: sobre JSON + AES-GCM con AAD
-│   └── GestorRespaldo.kt    Exportar/importar por SAF, fusión y deduplicado
+│   └── GestorRespaldo.kt    Exportar/importar por SAF
 └── ui/
     ├── ModeloBoveda.kt      Único camino de la interfaz hacia la bóveda
     ├── ModeloRespaldo.kt    Exportar e importar, con su propio estado
@@ -357,20 +358,24 @@ app/src/main/java/com/carlosalbertoxw/boveda/
                              papelera, historial y ajustes
 ```
 
+El cifrado (`Sobre`, `Kdf`, `Generador`), el modelo (`Credencial`, `HistorialContrasena`), el
+formato del respaldo (`Respaldo`), la fusión (`Fusion`) y la papelera (`Papelera`) están en el
+[núcleo compartido](../boveda-nucleo), con sus pruebas. Room devuelve directamente los modelos
+del núcleo; las clases `*Fila` solo describen las tablas y sirven para insertar y actualizar.
+
 La interfaz no toca preferencias ni el Keystore: todo lo que cruza esa línea pasa por un
 método con nombre de `ModeloBoveda`, y los ajustes salen como estado observable.
 
 ## Pruebas
 
+Las del núcleo (criptografía, formato del respaldo, fusión, historial, papelera, compatibilidad
+con la implementación de referencia) corren con `./gradlew :boveda-nucleo:test`. Las de esta app:
+
 | Suite | Qué cubre |
 |---|---|
-| `CriptografiaTest` | Que el sobre AES-GCM detecte manipulaciones, que la derivación dependa de los bytes reales (acentos y emojis incluidos) y que el generador no se repita |
-| `RespaldoTest` | El formato del archivo: ida y vuelta completa, que nada viaje en claro y que bajar las iteraciones de la cabecera lo invalide |
-| `CandadoTest` | El freno a la fuerza bruta con un reloj falso: los tres intentos gratis, el crecimiento del castigo, el tope, y que ni reiniciar el teléfono ni cambiar la fecha lo alteren |
+| `CandadoTest` | El freno a la fuerza bruta con un reloj falso: los tres intentos gratis, el crecimiento del castigo, el tope, que cambiar la fecha no lo altere y que reiniciar lo vuelva a empezar |
 | `PreferenciasBovedaTest` | Que sal, iteraciones y sobre viajen siempre juntos, que es lo que separa una bóveda legible de una perdida |
-| `FusionTest` | Conflictos al importar: misma cuenta por título + usuario, gana la versión más reciente y ninguna contraseña se pierde (idéntica en escritorio) |
-| `PapeleraTest` | La aritmética del plazo de 30 días, con el reloj como parámetro en vez de esperar un mes |
-| `HistorialTest` | Que un historial venido de fuera entre siempre con una sola marca de "actual" y coincidiendo con la entrada |
+| `RespaldoAndroidTest` | El formato del respaldo con el org.json de Android, incluido el respaldo de referencia escrito con Node |
 | `FlujoBovedaTest` *(instrumentada)* | El ciclo completo contra SQLCipher real, incluido que el `.db` no contenga nada legible |
 | `FlujoRespaldoTest` *(instrumentada)* | Exportar y recuperar tras vaciar la bóveda, que la papelera y el historial vuelvan enteros, y que exportar exija la maestra |
 | `FlujoPapeleraTest` *(instrumentada)* | Borrar, restaurar, purgar por plazo y mover la marca del historial, con transacciones de verdad |

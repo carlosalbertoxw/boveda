@@ -1,0 +1,15 @@
+# Todo el texto se guarda con LF, sea cual sea el sistema que lo edite. Sin
+# esto, core.autocrlf deja la copia de trabajo con finales mezclados, y un
+# gradlew con CRLF deja de arrancar en macOS y Linux.
+* text=auto eol=lf
+
+# Los scripts de Windows si necesitan CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binarios: ni se convierten ni se comparan como texto.
+*.jar binary
+*.png binary
+*.ico binary
+*.icns binary
+*.webp binary

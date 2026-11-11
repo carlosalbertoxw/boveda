@@ -1,0 +1,41 @@
+# Analisis estatico de seguridad del codigo Kotlin de las tres builds.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Los lunes: las consultas de CodeQL mejoran aunque el codigo no cambie.
+    - cron: "17 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analiza:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: java-kotlin
+          build-mode: manual
+          queries: security-extended
+
+      # CodeQL necesita ver compilar el codigo. La build de escritorio compila
+      # tambien el nucleo, que entra con includeBuild.
+      - name: Compilar
+        run: |
+          (cd boveda-desktop && ./gradlew compileKotlin compileTestKotlin --no-build-cache --rerun-tasks --console=plain)
+          (cd boveda-android && ./gradlew :app:compileDebugKotlin --no-build-cache --rerun-tasks --console=plain)
+
+      - uses: github/codeql-action/analyze@v4

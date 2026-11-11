@@ -18,6 +18,14 @@ val keystoreProperties = Properties().apply {
     }
 }
 
+// La version vive en version.properties, en la raiz del repositorio, y la
+// comparten las dos apps. El versionCode sale de ella (1.2.3 -> 10203): Android
+// solo instala una actualizacion encima si este numero sube.
+val versionApp: String = Properties().apply {
+    rootProject.file("../version.properties").inputStream().use { load(it) }
+}.getProperty("version")
+val (mayor, menor, parche) = versionApp.split(".").map { it.toInt() }
+
 android {
     namespace = "com.carlosalbertoxw.boveda"
     // Las librerias de AndroidX actuales piden compilar contra la 37. El
@@ -31,8 +39,8 @@ android {
         // PBKDF2WithHmacSHA256, que son la base del cifrado de la boveda.
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = mayor * 10_000 + menor * 100 + parche
+        versionName = versionApp
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

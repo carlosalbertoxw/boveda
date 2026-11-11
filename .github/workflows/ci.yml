@@ -1,0 +1,94 @@
+# Compila y prueba las dos apps y el nucleo en cada cambio, y en cada tag vX.Y.Z
+# genera los instaladores de escritorio. jpackage no compila de forma cruzada:
+# cada instalador sale de un runner con su propio sistema operativo.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  escritorio:
+    name: Escritorio y núcleo (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            instaladores: packageDeb packageRpm
+          - os: windows-latest
+            instaladores: packageMsi packageExe
+          - os: macos-latest
+            instaladores: packageDmg
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: boveda-desktop
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      # Ademas de la cache, valida que gradle-wrapper.jar sea uno publicado por
+      # Gradle y no uno alterado.
+      - uses: gradle/actions/setup-gradle@v6
+
+      # El nucleo se prueba en los tres sistemas: es donde vive la criptografia,
+      # y el proveedor de JCE de cada plataforma tiene que dar los mismos bytes.
+      - name: Pruebas y análisis
+        run: ./gradlew :boveda-nucleo:test :boveda-nucleo:detekt test detekt --console=plain
+
+      - name: Herramientas para el .rpm
+        if: startsWith(github.ref, 'refs/tags/v') && runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - name: Instaladores
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: ./gradlew ${{ matrix.instaladores }} --console=plain
+
+      - uses: actions/upload-artifact@v7
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: instaladores-${{ runner.os }}
+          path: boveda-desktop/build/compose/binaries/main/*/*
+          if-no-files-found: error
+
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: boveda-android
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+
+      # El release sale sin firmar: el keystore no vive en el repositorio ni en
+      # los secretos del CI. Compilarlo igual comprueba que R8 no rompa nada.
+      # Lint falla con cualquier error: es el que detecta, por ejemplo, una API
+      # que no existe en las versiones de Android que la app dice soportar.
+      - name: Pruebas, análisis y release
+        run: ./gradlew :app:testDebugUnitTest :app:detekt :app:lintDebug :app:assembleRelease --console=plain
+
+      - uses: actions/upload-artifact@v7
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: apk-sin-firmar
+          path: boveda-android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error

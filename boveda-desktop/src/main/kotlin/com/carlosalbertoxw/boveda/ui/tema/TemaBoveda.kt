@@ -90,7 +90,9 @@ val IconoBoveda: ImageVector = ImageVector.Builder(
     viewportHeight = 108f
 ).apply {
     addPath(
-        pathData = addPathNodes("M18,6H90A12,12 0,0 1,102,18V90A12,12 0,0 1,90,102H18A12,12 0,0 1,6,90V18A12,12 0,0 1,18,6Z"),
+        pathData = addPathNodes(
+            "M18,6H90A12,12 0,0 1,102,18V90A12,12 0,0 1,90,102H18A12,12 0,0 1,6,90V18A12,12 0,0 1,18,6Z"
+        ),
         fill = SolidColor(Color(0xFF1B2A4A))
     )
     addPath(

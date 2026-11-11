@@ -6,10 +6,8 @@ funciones, la misma interfaz y **el mismo formato de respaldo**. Un archivo expo
 al revés.
 
 - **Kotlin + Compose Multiplatform (Material 3)**: el mismo lenguaje y el mismo modelo de interfaz
-  que la app de Android. La lógica de seguridad y de datos se portó casi línea por línea.
-- **Estado:** compila, 120 pruebas en verde (las 7 suites de Android adaptadas, más 3 de flujo que en
-  Android pedían un dispositivo y una de compatibilidad nueva). El `.msi` de Windows se genera y la
-  app empaquetada arranca.
+  que la app de Android. El cifrado, el formato del respaldo, la fusión y la papelera no se copian:
+  las dos apps usan el mismo [núcleo compartido](../boveda-nucleo).
 
 ---
 
@@ -18,17 +16,17 @@ al revés.
 Los comandos se lanzan desde esta carpeta (`boveda-desktop/`), que es una build de Gradle
 independiente de la de Android.
 
-Requiere **JDK 17 a 24** para Gradle (se probó con el JBR 21 de Android Studio). Gradle 8.14 no corre
-sobre JDK 25 o posterior, así que con el `java` 26 del sistema hay que pasar `JAVA_HOME`.
+Requiere un **JDK 17 o posterior** (probado con 21 y 26).
 
 ```bash
-JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew run
+./gradlew run
 ```
 
-Las pruebas (sin emulador ni dispositivo: aquí el ciclo completo corre en la JVM):
+Las pruebas de esta app y las del núcleo compartido (sin emulador ni dispositivo: aquí el ciclo
+completo y las pantallas corren en la JVM), y el linter:
 
 ```bash
-JAVA_HOME=~/.jdks/jbr-21.0.11 ./gradlew test
+./gradlew test :boveda-nucleo:test detekt
 ```
 
 Para probar sin tocar tu bóveda de verdad, apunta la app a otra carpeta:
@@ -47,6 +45,9 @@ un runtime de Java recortado dentro, así que quien instala no necesita tener Ja
 | Windows | `./gradlew packageMsi` o `packageExe` | `build/compose/binaries/main/msi/` |
 | macOS | `./gradlew packageDmg` | `build/compose/binaries/main/dmg/` |
 | Linux | `./gradlew packageDeb` o `packageRpm` | `build/compose/binaries/main/deb/` |
+
+Con un tag `vX.Y.Z`, el CI genera los instaladores de los tres sistemas, cada uno en su propio runner, y
+los deja como artefactos del run.
 
 La primera vez en Windows se descarga WiX 3 automáticamente. El `upgradeUuid` del `.msi` está fijo
 en `build.gradle.kts` y no debe cambiar nunca: es lo que permite que una versión nueva actualice la
@@ -76,10 +77,10 @@ solo desenvuelve esa frase: cambiar la maestra es instantáneo y no recifra nada
 | Capa | Qué hace | Dónde |
 |---|---|---|
 | AES-256-GCM sobre el archivo entero | `boveda.dat` es ruido sin la frase; un byte alterado impide abrirlo | [BaseBoveda.kt](src/main/kotlin/com/carlosalbertoxw/boveda/datos/BaseBoveda.kt) |
-| PBKDF2-HMAC-SHA256, 210 000 iteraciones | Cada intento de adivinar cuesta trabajo real | [Kdf.kt](src/main/kotlin/com/carlosalbertoxw/boveda/seguridad/Kdf.kt) |
-| AES-256-GCM | Cifrado autenticado; la etiqueta es lo que verifica la contraseña | [Sobre.kt](src/main/kotlin/com/carlosalbertoxw/boveda/seguridad/Sobre.kt) |
-| Freno exponencial + borrado opcional | 3 intentos gratis, luego 15 s → 5 min, cruzando dos relojes | [GestorBoveda.kt](src/main/kotlin/com/carlosalbertoxw/boveda/seguridad/GestorBoveda.kt) |
-| Escritura atómica | Temporal + `fsync` + renombrado: un corte de luz no deja nada a medias | [ArchivoSeguro.kt](src/main/kotlin/com/carlosalbertoxw/boveda/datos/ArchivoSeguro.kt) |
+| PBKDF2-HMAC-SHA256, 600 000 iteraciones | Cada intento de adivinar cuesta trabajo real | [Kdf.kt](../boveda-nucleo/src/main/kotlin/com/carlosalbertoxw/boveda/seguridad/Kdf.kt) |
+| AES-256-GCM | Cifrado autenticado; la etiqueta es lo que verifica la contraseña | [Sobre.kt](../boveda-nucleo/src/main/kotlin/com/carlosalbertoxw/boveda/seguridad/Sobre.kt) |
+| Freno exponencial + borrado opcional | 3 intentos gratis, luego 15 s → 5 min, cruzando dos relojes; reiniciar el equipo vuelve a empezar la espera | [GestorBoveda.kt](src/main/kotlin/com/carlosalbertoxw/boveda/seguridad/GestorBoveda.kt) |
+| Escritura atómica | Temporal privado desde que nace + `fsync` + renombrado: un corte de luz no deja nada a medias | [ArchivoSeguro.kt](src/main/kotlin/com/carlosalbertoxw/boveda/datos/ArchivoSeguro.kt) |
 | Una sola instancia | Dos copias abiertas no se pisan los cambios | [InstanciaUnica.kt](src/main/kotlin/com/carlosalbertoxw/boveda/escritorio/InstanciaUnica.kt) |
 
 **La contraseña maestra no se guarda en ningún lado, ni siquiera como hash.** Las iteraciones se
@@ -142,8 +143,8 @@ Funcionan exactamente igual que en Android; el razonamiento completo está en el
 ### Conflictos al fusionar
 
 Pasar respaldos entre el teléfono y la computadora después de cambiar una contraseña en uno de los dos
-es el caso normal, no la excepción. La regla ([GestorRespaldo.Fusion](src/main/kotlin/com/carlosalbertoxw/boveda/datos/GestorRespaldo.kt))
-es idéntica en las dos apps, con la misma `FusionTest`:
+es el caso normal, no la excepción. La regla ([Fusion.kt](../boveda-nucleo/src/main/kotlin/com/carlosalbertoxw/boveda/datos/Fusion.kt))
+es la misma en las dos apps porque las dos usan ese mismo código:
 
 - **La cuenta es título + usuario**, sin distinguir mayúsculas ni espacios de sobra. El título solo no
   basta: dos «Correo» (personal y trabajo) se fusionarían y una contraseña pisaría a la otra.
@@ -160,13 +161,14 @@ El aviso al terminar cuenta las tres cosas: nuevas, actualizadas y omitidas.
 
 ### La compatibilidad con Android está probada, no supuesta
 
-Copiar el código de un lado a otro no demuestra nada: si los dos lados se desviaran del formato a la
-vez, sus propias pruebas seguirían pasando. Por eso [CompatibilidadAndroidTest](src/test/kotlin/com/carlosalbertoxw/boveda/CompatibilidadAndroidTest.kt)
+Las dos apps leen y escriben con el mismo `Respaldo.kt`, pero eso solo garantiza que coincidan entre
+sí, no que sigan la especificación del formato. Por eso
+[CompatibilidadFormatoTest](../boveda-nucleo/src/test/kotlin/com/carlosalbertoxw/boveda/CompatibilidadFormatoTest.kt)
 compara contra una **implementación independiente en Node.js** escrita desde la especificación
-([herramientas/respaldo-referencia.mjs](herramientas/respaldo-referencia.mjs)):
+([respaldo-referencia.mjs](../boveda-nucleo/herramientas/respaldo-referencia.mjs)):
 
 - un respaldo escrito por Node, con contraseña con `ñ` y emoji, papelera e historial, se importa
-  completo;
+  completo, aquí y en Android con su propio org.json;
 - la derivación de llave coincide byte a byte con la de Node;
 - y en la dirección inversa se comprobó a mano que Node descifra un respaldo escrito por esta app.
 
@@ -189,6 +191,10 @@ respaldos que ya existen en los teléfonos, y la prueba lo detecta.
   de la interfaz se usan `CharArray`/`ByteArray` y se sobreescriben con ceros.
 - **El respaldo, una vez creado, deja de estar bajo control de la app.** Si lo guardas en una carpeta
   sincronizada, el archivo cifrado sube a la nube.
+- **El freno a la fuerza bruta solo detiene a quien está frente al teclado.** Los contadores de
+  intentos y la espera viven en `boveda_config.properties`, que cualquier programa con los permisos de
+  tu usuario puede editar o copiar. Contra quien se lleva los archivos, la defensa es el coste de
+  PBKDF2 por cada intento, y por eso conviene una maestra larga.
 - **PBKDF2, no Argon2id**, por la misma razón que en Android y para no romper la compatibilidad.
 
 ---
@@ -201,21 +207,15 @@ src/main/kotlin/com/carlosalbertoxw/boveda/
 ├── AplicacionBoveda.kt      Estado del candado y reglas de cierre (el Application de Android)
 ├── Textos.kt                Todos los textos de la interfaz (el strings.xml)
 ├── seguridad/
-│   ├── Sobre.kt             AES-256-GCM                              (idéntico a Android)
-│   ├── Kdf.kt               PBKDF2 + medidor de fuerza               (idéntico a Android)
-│   ├── Generador.kt         Contraseñas con SecureRandom             (idéntico a Android)
 │   ├── Reloj.kt             Los dos relojes, tras una interfaz
-│   ├── GestorBoveda.kt      Abrir, cerrar, cambiar maestra, borrar
+│   ├── GestorBoveda.kt      Abrir, cerrar, cambiar maestra, borrar, freno a la fuerza bruta
 │   ├── PreferenciasBoveda.kt Sal, envoltura y ajustes, con escritura atómica
 │   └── Portapapeles.kt      Copiado sensible con borrado automático
 ├── datos/
-│   ├── Credencial.kt / HistorialContrasena.kt
-│   ├── Papelera.kt          El plazo de 30 días                      (idéntico a Android)
-│   ├── Respaldo.kt          Formato del archivo de respaldo          (idéntico a Android)
 │   ├── BaseBoveda.kt        El archivo cifrado (en lugar de SQLCipher + Room)
 │   ├── CredencialDao.kt     Misma API y mismas transacciones que el DAO de Room
 │   ├── ArchivoSeguro.kt     Escritura atómica y permisos privados
-│   └── GestorRespaldo.kt    Exportar/importar, fusión y deduplicado
+│   └── GestorRespaldo.kt    Exportar e importar
 ├── escritorio/
 │   ├── Rutas.kt             Carpeta de datos de cada sistema
 │   ├── InstanciaUnica.kt    Una sola copia abierta por bóveda
@@ -229,17 +229,20 @@ src/main/kotlin/com/carlosalbertoxw/boveda/
     └── pantallas/           Alta, desbloqueo, listado, detalle, editor, historial, papelera, ajustes
 ```
 
+El cifrado (`Sobre`, `Kdf`, `Generador`), el modelo (`Credencial`, `HistorialContrasena`), el
+formato del respaldo (`Respaldo`), la fusión (`Fusion`) y la papelera (`Papelera`) están en el
+[núcleo compartido](../boveda-nucleo), con sus pruebas.
+
 ## Pruebas
+
+Las del núcleo (criptografía, formato del respaldo, fusión, historial, papelera y compatibilidad
+con la implementación de referencia) corren con `./gradlew :boveda-nucleo:test`. Las de esta app:
 
 | Suite | Qué cubre |
 |---|---|
-| `CriptografiaTest` | Sobre AES-GCM, derivación con acentos y emojis, generador (idéntica a Android) |
-| `RespaldoTest` | Formato del archivo: ida y vuelta, nada en claro, cabecera autenticada, versión 1 |
-| `CompatibilidadAndroidTest` | Respaldo y derivación contra una implementación independiente en Node.js |
 | `CandadoTest` | Freno a la fuerza bruta con reloj falso, reinicios, cambios de fecha, borrado tras N fallos |
 | `PreferenciasBovedaTest` | Sal, iteraciones y sobre siempre juntos; que todo sobreviva a reabrir la app |
-| `FusionTest` | Conflictos al importar: misma cuenta, gana la más reciente, ninguna contraseña se pierde (idéntica a Android) |
-| `HistorialTest` / `PapeleraTest` | Marca de "actual" y plazo de 30 días (idénticas a Android) |
-| `FlujoBovedaTest` | Ciclo completo con 210 000 iteraciones: crear, cerrar, reabrir, archivo ilegible, archivo alterado |
+| `FlujoBovedaTest` | Ciclo completo con las iteraciones reales: crear, cerrar, reabrir, archivo ilegible, archivo alterado |
 | `FlujoPapeleraTest` | Papelera e historial con transacciones reales, verificando lo escrito en disco |
 | `FlujoRespaldoTest` | Exportar e importar contra la base real, incluido el respaldo de referencia |
+| `PantallasTest` | Las protecciones de la interfaz: crear la bóveda solo con maestras que coinciden, la contraseña tapada que se vuelve a tapar sola, las licencias en Ajustes |
