@@ -185,6 +185,13 @@ object Textos {
         "Elimina todas las entradas y la contraseña maestra de este equipo. No hay copia en " +
             "ningún lado, así que no se puede deshacer."
     const val AJUSTES_BORRAR_BOTON = "Borrar todo"
+    const val AJUSTES_LICENCIAS_TITULO = "Licencias"
+    const val AJUSTES_LICENCIAS_EXPLICACION =
+        "Bóveda es software libre con licencia MIT. Usa componentes de otros proyectos, cada " +
+            "uno con su licencia."
+    const val AJUSTES_LICENCIAS_VER = "Ver licencias"
+    const val CERRAR = "Cerrar"
+
     const val AJUSTES_SIN_INTERNET =
         "Esta app no usa la red. No hay sincronización, ni copia en la nube, ni telemetría: " +
             "lo que guardas vive solo en este equipo."

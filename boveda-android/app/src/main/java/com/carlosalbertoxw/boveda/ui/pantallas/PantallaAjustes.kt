@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.carlosalbertoxw.boveda.Licencias
 import com.carlosalbertoxw.boveda.R
 import com.carlosalbertoxw.boveda.datos.Respaldo
 import com.carlosalbertoxw.boveda.ui.ModeloBoveda
@@ -62,6 +63,7 @@ fun PantallaAjustes(
 
     var cambiandoMaestra by remember { mutableStateOf(false) }
     var confirmandoBorrado by remember { mutableStateOf(false) }
+    var viendoLicencias by remember { mutableStateOf(false) }
 
     // Primero se elige el archivo y solo despues se piden las contrasenas: asi
     // ningun secreto queda esperando en memoria mientras el selector del
@@ -220,6 +222,16 @@ fun PantallaAjustes(
                 }
             }
 
+            Seccion(
+                stringResource(R.string.ajustes_licencias_titulo),
+                stringResource(R.string.ajustes_licencias_explicacion)
+            ) {
+                OutlinedButton(
+                    onClick = { viendoLicencias = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(stringResource(R.string.ajustes_licencias_ver)) }
+            }
+
             Text(
                 stringResource(R.string.ajustes_sin_internet),
                 style = MaterialTheme.typography.bodySmall,
@@ -255,6 +267,25 @@ fun PantallaAjustes(
                 origenImportar = null
             },
             alCerrar = { origenImportar = null }
+        )
+    }
+
+    if (viendoLicencias) {
+        DialogoSeguro(
+            alCerrar = { viendoLicencias = false },
+            titulo = { Text(stringResource(R.string.ajustes_licencias_titulo)) },
+            contenido = {
+                Text(
+                    Licencias.texto,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                )
+            },
+            botonConfirmar = {
+                TextButton(onClick = { viendoLicencias = false }) {
+                    Text(stringResource(R.string.cerrar))
+                }
+            }
         )
     }
 

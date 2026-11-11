@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
@@ -32,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.carlosalbertoxw.boveda.AplicacionBoveda
+import com.carlosalbertoxw.boveda.Licencias
 import com.carlosalbertoxw.boveda.Textos
 import com.carlosalbertoxw.boveda.datos.Respaldo
 import com.carlosalbertoxw.boveda.escritorio.SelectorArchivos
@@ -57,6 +59,7 @@ fun PantallaAjustes(
 
     var cambiandoMaestra by remember { mutableStateOf(false) }
     var confirmandoBorrado by remember { mutableStateOf(false) }
+    var viendoLicencias by remember { mutableStateOf(false) }
 
     // Primero se elige el archivo y solo despues se piden las contrasenas: asi
     // ningun secreto queda esperando en memoria mientras el selector del
@@ -161,6 +164,12 @@ fun PantallaAjustes(
                 }
             }
 
+            Seccion(Textos.AJUSTES_LICENCIAS_TITULO, Textos.AJUSTES_LICENCIAS_EXPLICACION) {
+                OutlinedButton(onClick = { viendoLicencias = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(Textos.AJUSTES_LICENCIAS_VER)
+                }
+            }
+
             Text(
                 Textos.AJUSTES_SIN_INTERNET,
                 style = MaterialTheme.typography.bodySmall,
@@ -204,6 +213,23 @@ fun PantallaAjustes(
                 origenImportar = null
             },
             alCerrar = { origenImportar = null }
+        )
+    }
+
+    if (viendoLicencias) {
+        DialogoSeguro(
+            alCerrar = { viendoLicencias = false },
+            titulo = { Text(Textos.AJUSTES_LICENCIAS_TITULO) },
+            contenido = {
+                ColumnaDesplazable(Modifier.heightIn(max = 420.dp), relleno = 0.dp) {
+                    SelectionContainer {
+                        Text(Licencias.texto, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            botonConfirmar = {
+                TextButton(onClick = { viendoLicencias = false }) { Text(Textos.CERRAR) }
+            }
         )
     }
 
