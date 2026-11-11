@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
@@ -21,7 +20,10 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.carlosalbertoxw.boveda"
-    compileSdk = 36
+    // Las librerias de AndroidX actuales piden compilar contra la 37. El
+    // targetSdk se queda en 36 hasta probar en un dispositivo los cambios de
+    // comportamiento de Android 17.
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.carlosalbertoxw.boveda"
@@ -84,12 +86,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
-
     buildFeatures {
         compose = true
     }
@@ -97,7 +93,7 @@ android {
     // Los esquemas exportados viajan como assets de las pruebas instrumentadas:
     // es de donde MigrationTestHelper saca la version 1 para construirla tal y
     // como era antes de migrar.
-    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    sourceSets.getByName("androidTest").assets.directories.add("$projectDir/schemas")
 
     testOptions {
         unitTests {
@@ -140,13 +136,11 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
 
     implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.biometric)
@@ -157,9 +151,6 @@ dependencies {
     // infla su dialogo de huella con vistas de AppCompat en API 26-27.
     implementation(libs.androidx.appcompat)
     implementation(libs.sqlcipher.android)
-
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

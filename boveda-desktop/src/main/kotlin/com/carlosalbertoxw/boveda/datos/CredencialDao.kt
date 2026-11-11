@@ -196,7 +196,7 @@ class CredencialDao internal constructor(private val base: BaseBoveda) {
      */
     suspend fun purga(limite: Long) = base.transaccion { c ->
         val vencidas = c.credenciales
-            .filter { it.eliminadoEn != null && it.eliminadoEn <= limite }
+            .filter { (it.eliminadoEn ?: return@filter false) <= limite }
             .mapTo(HashSet()) { it.id }
         if (vencidas.isEmpty()) return@transaccion c to Unit
         c.copy(
