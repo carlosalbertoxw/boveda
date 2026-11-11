@@ -111,8 +111,6 @@ class ModeloBoveda(app: Application) : AndroidViewModel(app) {
 
     fun busca(texto: String) { _busqueda.value = texto }
 
-    fun avisa(texto: String) = avisos.muestra(texto)
-
     /**
      * La papelera se vacia sola al abrir la boveda.
      *

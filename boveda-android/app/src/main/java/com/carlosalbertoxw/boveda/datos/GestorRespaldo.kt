@@ -6,7 +6,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.carlosalbertoxw.boveda.seguridad.EstadoBoveda
 import com.carlosalbertoxw.boveda.seguridad.GestorBoveda
+import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InputStream
 import com.carlosalbertoxw.boveda.R
 
 /**
@@ -99,7 +101,7 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
                 // limite, asi que elegir por error un video en el selector
                 // tumbaba el proceso por falta de memoria justo antes de poder
                 // mostrar el mensaje que explica el problema.
-                val leido = flujo.readNBytes(limiteBytes + 1)
+                val leido = leeHasta(flujo, limiteBytes + 1)
                 if (leido.size > limiteBytes) {
                     return@withContext Importacion.Falla(texto(R.string.error_archivo_grande))
                 }
@@ -157,4 +159,23 @@ class GestorRespaldo(private val app: Context, private val gestor: GestorBoveda)
         return Importacion.Ok(plan.nuevas.size, plan.omitidas, plan.actualizadas.size)
     }
 
+    /**
+     * Lee como mucho [maximo] bytes. Hace lo que `InputStream.readNBytes`, que
+     * en Android solo existe desde la API 33: con minSdk 26, usarlo tumbaba la
+     * importacion en Android 8 a 12.
+     */
+    private fun leeHasta(flujo: InputStream, maximo: Int): ByteArray {
+        val salida = ByteArrayOutputStream()
+        val trozo = ByteArray(TROZO)
+        while (salida.size() < maximo) {
+            val leidos = flujo.read(trozo, 0, minOf(trozo.size, maximo - salida.size()))
+            if (leidos < 0) break
+            salida.write(trozo, 0, leidos)
+        }
+        return salida.toByteArray()
+    }
+
+    private companion object {
+        const val TROZO = 8 * 1024
+    }
 }

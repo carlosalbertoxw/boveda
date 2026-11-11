@@ -5,8 +5,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import android.security.keystore.StrongBoxUnavailableException
 import java.security.KeyStore
+import java.security.ProviderException
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -55,9 +55,12 @@ object AlmacenBiometrico {
 
         return try {
             genera(conStrongBox)
-        } catch (_: StrongBoxUnavailableException) {
-            // Algunos equipos anuncian StrongBox y luego lo rechazan para AES.
-            // Se cae al Keystore normal, que sigue siendo respaldado por TEE.
+        } catch (e: ProviderException) {
+            // Algunos equipos anuncian StrongBox y luego lo rechazan para AES
+            // (StrongBoxUnavailableException). Se cae al Keystore normal, que
+            // sigue siendo respaldado por TEE. Se atrapa la clase madre porque
+            // la hija no existe por debajo de la API 28.
+            if (!conStrongBox) throw e
             genera(false)
         }
     }

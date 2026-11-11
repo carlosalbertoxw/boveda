@@ -90,8 +90,6 @@ class ModeloBoveda(private val aplicacion: AplicacionBoveda) : Modelo(aplicacion
 
     fun busca(texto: String) { _busqueda.value = texto }
 
-    fun avisa(texto: String) = avisos.muestra(texto)
-
     /**
      * La papelera se vacia sola al abrir la boveda. No hay ninguna tarea
      * programada que lo haga, y no puede haberla: sin boveda abierta no hay

@@ -26,7 +26,6 @@
         android:localeConfig="@xml/idiomas"
         android:enableOnBackInvokedCallback="true"
         android:memtagMode="async"
-        android:largeHeap="false"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:dataExtractionRules="@xml/reglas_extraccion">
@@ -41,10 +40,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:excludeFromRecents="false"
-            android:screenOrientation="unspecified"
-            android:configChanges="uiMode"
-            android:theme="@style/Theme.Boveda">
+            android:configChanges="uiMode">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -87,9 +83,13 @@
           el shell si: por adb se le pueden mandar ordenes. Solo sirve para
           instalar perfiles de arranque —unos milisegundos de rendimiento— y no
           vale un componente accesible desde fuera en una app de contrasenas.
+          Lint avisa de que la clase no existe (MissingClass) porque no la ve en
+          las dependencias directas, pero si llega por las transitivas: sin esta
+          regla, el manifiesto final vuelve a traer el receiver exportado.
         -->
         <receiver
             android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:ignore="MissingClass"
             tools:node="remove" />
     </application>
 

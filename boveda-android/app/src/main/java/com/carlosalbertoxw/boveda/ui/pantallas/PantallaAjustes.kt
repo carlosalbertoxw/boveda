@@ -1,6 +1,7 @@
 package com.carlosalbertoxw.boveda.ui.pantallas
 
 import android.net.Uri
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +35,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -53,7 +53,7 @@ fun PantallaAjustes(
     alVolver: () -> Unit,
     respaldo: ModeloRespaldo = viewModel()
 ) {
-    val actividad = LocalContext.current as? FragmentActivity
+    val actividad = LocalActivity.current as? FragmentActivity
 
     val autobloqueo by modelo.minutosAutobloqueo.collectAsStateWithLifecycle()
     val portapapeles by modelo.segundosPortapapeles.collectAsStateWithLifecycle()

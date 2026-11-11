@@ -1,9 +1,6 @@
-# SQLCipher entra por JNI: R8 no ve las llamadas y borraria las clases.
--keep class net.zetetic.database.** { *; }
--keep class net.sqlcipher.** { *; }
-
-# Room genera implementaciones por reflexion en tiempo de construccion.
--keep class * extends androidx.room.RoomDatabase { <init>(); }
+# SQLCipher (las clases que usa por JNI) y Room (el constructor de la base que
+# instancia por reflexion) traen sus propias reglas de R8 dentro del AAR, asi
+# que aqui no se repiten.
 
 # Borra del binario de release toda llamada a Log: una contrasena que se
 # escape a logcat es legible por cualquier app con permiso de lectura de logs
