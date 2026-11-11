@@ -22,6 +22,10 @@ java {
 }
 
 dependencies {
+    // Cripto, formato del respaldo, fusion y papelera: el mismo codigo que usa
+    // la app de Android.
+    implementation(libs.boveda.nucleo)
+
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
     implementation(compose.materialIconsExtended)
@@ -33,6 +37,12 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+}
+
+// El respaldo de referencia escrito con Node vive en el nucleo;
+// FlujoRespaldoTest tambien lo importa contra la base real.
+sourceSets.test {
+    resources.srcDir("../boveda-nucleo/src/test/resources")
 }
 
 tasks.test {

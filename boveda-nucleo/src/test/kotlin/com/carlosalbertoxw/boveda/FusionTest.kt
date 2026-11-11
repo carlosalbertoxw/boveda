@@ -1,7 +1,7 @@
 package com.carlosalbertoxw.boveda
 
 import com.carlosalbertoxw.boveda.datos.Credencial
-import com.carlosalbertoxw.boveda.datos.GestorRespaldo.Fusion
+import com.carlosalbertoxw.boveda.datos.Fusion
 import com.carlosalbertoxw.boveda.datos.HistorialContrasena
 import com.carlosalbertoxw.boveda.datos.Respaldo
 import org.junit.Assert.assertEquals
@@ -19,7 +19,8 @@ import org.junit.Test
  * computadora despues de cambiar contrasenas en uno de los dos. Ninguno de esos
  * gestos debe duplicar cuentas ni perder una contrasena.
  *
- * Este archivo es identico en la app de Android y en la de escritorio.
+ * Vive en el nucleo junto con la regla: las dos apps fusionan con el mismo
+ * codigo, asi que basta probarla una vez.
  */
 class FusionTest {
 

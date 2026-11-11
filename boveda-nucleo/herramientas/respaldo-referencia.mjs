@@ -1,9 +1,12 @@
 // Escribe un respaldo de Boveda (formato version 2) SIN usar el codigo Kotlin,
-// directamente desde la especificacion del formato de la app de Android.
-// Sirve de prueba de compatibilidad: si la app lo lee, el formato coincide por
-// construccion y no porque las dos versiones compartan el mismo codigo.
+// directamente desde la especificacion del formato. Sirve de prueba de
+// compatibilidad: las dos apps leen y escriben con el mismo Respaldo.kt, asi que
+// solo un archivo escrito por otro programa demuestra que ese codigo sigue la
+// especificacion y no se desvio de ella sin que nada lo notara.
 //
 //   node herramientas/respaldo-referencia.mjs > src/test/resources/respaldo-referencia-v2.json
+//
+// Se lanza desde boveda-nucleo/.
 import crypto from "node:crypto";
 
 const contrasena = "contraseña del respaldo 🔐";

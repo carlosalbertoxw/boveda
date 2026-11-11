@@ -1,10 +1,5 @@
 package com.carlosalbertoxw.boveda.datos
 
-import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
-import androidx.room.PrimaryKey
-
 /**
  * Una contrasena que esta entrada tuvo alguna vez, incluida la de ahora.
  *
@@ -17,27 +12,16 @@ import androidx.room.PrimaryKey
  *
  * Por eso mismo el historial se puede podar entrada por entrada: si una
  * contrasena vieja ya no le sirve a nadie, lo mejor que se puede hacer con
- * ella es que deje de existir. Ver [CredencialDao.borraDelHistorial].
+ * ella es que deje de existir: cada app ofrece borrar una por una.
  *
  * [actual] es la marca de "esta es la que vale hoy". La verdad sobre cual usa
  * la cuenta la sigue teniendo [Credencial.contrasena]; la marca dice cual de
  * las filas del historial le corresponde, y las dos se mueven juntas dentro de
- * la misma transaccion para que no puedan discrepar.
+ * la misma transaccion para que no puedan discrepar. [Respaldo.normaliza] es
+ * quien lo garantiza para lo que llega de fuera.
  */
-@Entity(
-    tableName = "historial_contrasenas",
-    foreignKeys = [
-        ForeignKey(
-            entity = Credencial::class,
-            parentColumns = ["id"],
-            childColumns = ["credencialId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
-    indices = [Index("credencialId")]
-)
 data class HistorialContrasena(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val id: Long = 0,
     val credencialId: Long,
     val contrasena: String,
     /** Cuando esta contrasena empezo a ser la de la entrada. */

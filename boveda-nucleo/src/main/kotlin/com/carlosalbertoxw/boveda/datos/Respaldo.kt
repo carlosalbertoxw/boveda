@@ -44,7 +44,7 @@ import java.util.Base64
  * incluye lo que se borro anteayer y todavia se puede recuperar.
  *
  * Los archivos de la version 1 se siguen leyendo: son los que ya existen en los
- * telefonos de la gente, y un respaldo que deja de abrirse por una actualizacion
+ * telefonos y computadoras de la gente, y un respaldo que deja de abrirse por una actualizacion
  * de la app es exactamente el fallo que un respaldo no puede tener. Al leerlos,
  * cada entrada estrena historial con la unica contrasena que trae el archivo.
  */

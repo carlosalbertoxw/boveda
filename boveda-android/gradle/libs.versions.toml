@@ -1,5 +1,7 @@
 [versions]
 agp = "9.5.1"
+# La misma version de Kotlin que boveda-desktop y boveda-nucleo: el nucleo se
+# compila dentro de esta build y conviene que todo salga del mismo compilador.
 kotlin = "2.4.21"
 ksp = "2.3.13"
 coreKtx = "1.19.1"
@@ -26,6 +28,11 @@ robolectric = "4.17"
 detekt = "1.23.8"
 
 [libraries]
+# El codigo compartido con escritorio: cripto, formato del respaldo, fusion y
+# papelera. Sin version porque no se descarga: settings.gradle.kts lo incluye
+# desde ../boveda-nucleo con includeBuild.
+boveda-nucleo = { module = "com.carlosalbertoxw.boveda:boveda-nucleo" }
+
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }

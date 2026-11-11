@@ -1,0 +1,17 @@
+[versions]
+# La misma version de Kotlin que las dos apps: el nucleo se compila dentro de
+# sus builds y conviene que todo salga del mismo compilador.
+kotlin = "2.4.21"
+# Solo para compilar y probar Respaldo. En Android org.json viene de fabrica
+# y en escritorio lo pone la propia app, asi que aqui va como compileOnly.
+json = "20260814"
+junit = "4.13.2"
+detekt = "1.23.8"
+
+[libraries]
+json = { group = "org.json", name = "json", version.ref = "json" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

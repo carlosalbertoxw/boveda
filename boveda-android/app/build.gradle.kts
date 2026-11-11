@@ -95,6 +95,10 @@ android {
     // como era antes de migrar.
     sourceSets.getByName("androidTest").assets.directories.add("$projectDir/schemas")
 
+    // El respaldo de referencia escrito con Node vive en el nucleo. Las pruebas
+    // de la JVM lo leen tambien aqui, con el org.json de Android.
+    sourceSets.getByName("test").resources.directories.add("$rootDir/../boveda-nucleo/src/test/resources")
+
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -113,16 +117,20 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
-// Antes no habia linter, asi que los descuidos que una herramienta senala
-// gratis —un import sin usar, un nombre totalmente cualificado a mitad de
-// archivo— se acumulaban sin que nadie los viera.
+// La misma configuracion de detekt para las tres builds, en la raiz del
+// repositorio: los descuidos que una herramienta senala gratis —un import sin
+// usar, un nombre totalmente cualificado a mitad de archivo— no se acumulan.
 detekt {
     buildUponDefaultConfig = true
-    config.setFrom(files("$rootDir/config/detekt.yml"))
+    config.setFrom(files("$rootDir/../config/detekt.yml"))
     source.setFrom(files("src/main/java", "src/test/java", "src/androidTest/java"))
 }
 
 dependencies {
+    // Cripto, formato del respaldo, fusion y papelera: el mismo codigo que usa
+    // la app de escritorio.
+    implementation(libs.boveda.nucleo)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)

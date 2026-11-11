@@ -3,6 +3,7 @@ package com.carlosalbertoxw.boveda
 import com.carlosalbertoxw.boveda.datos.Credencial
 import com.carlosalbertoxw.boveda.datos.HistorialContrasena
 import com.carlosalbertoxw.boveda.datos.Respaldo
+import com.carlosalbertoxw.boveda.datos.enPapelera
 import com.carlosalbertoxw.boveda.seguridad.Kdf
 import com.carlosalbertoxw.boveda.seguridad.Sobre
 import org.json.JSONArray
@@ -20,8 +21,8 @@ import java.util.Base64
  * historial dentro—, que no se abra sin la contrasena, que no se pueda
  * debilitar editando la cabecera y que los archivos viejos se sigan leyendo.
  *
- * En la JVM de escritorio org.json es la libreria real, asi que ya no hace
- * falta Robolectric como en Android.
+ * Aqui org.json es la libreria real. La app de Android repite la ida y vuelta
+ * con Robolectric, contra el org.json que trae el sistema.
  */
 class RespaldoTest {
 

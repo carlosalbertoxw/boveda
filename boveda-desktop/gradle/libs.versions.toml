@@ -1,7 +1,6 @@
 [versions]
-# Las mismas versiones de Kotlin y corrutinas que la app de Android: la logica
-# de seguridad y de datos se porto casi linea por linea, y conviene que compile
-# con el mismo compilador.
+# La misma version de Kotlin que boveda-android y boveda-nucleo: el nucleo se
+# compila dentro de esta build y conviene que todo salga del mismo compilador.
 kotlin = "2.4.21"
 compose = "1.12.2"
 coroutines = "1.11.0"
@@ -13,6 +12,10 @@ jna = "5.19.1"
 junit = "4.13.2"
 
 [libraries]
+# El codigo compartido con Android: cripto, formato del respaldo, fusion y
+# papelera. Sin version porque no se descarga: settings.gradle.kts lo incluye
+# desde ../boveda-nucleo con includeBuild.
+boveda-nucleo = { module = "com.carlosalbertoxw.boveda:boveda-nucleo" }
 kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 json = { group = "org.json", name = "json", version.ref = "json" }

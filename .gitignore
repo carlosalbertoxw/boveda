@@ -1,5 +1,6 @@
-# Reglas comunes a todo el repositorio. Cada app tiene ademas su propio
-# .gitignore con lo especifico de su build (boveda-android/, boveda-desktop/).
+# Un solo .gitignore para todo el repositorio: las tres builds (boveda-android,
+# boveda-desktop y boveda-nucleo) generan lo mismo, y los patrones sin barra
+# inicial valen en cualquier carpeta.
 
 # Sistema operativo
 .DS_Store
@@ -12,14 +13,13 @@ desktop.ini
 *.iml
 .vscode/
 
-# Gradle y Kotlin, por si alguien lanza una build desde la raiz.
+# Gradle y Kotlin.
 .gradle/
 .kotlin/
 build/
 local.properties
 
-# Firma: nunca al repositorio, este donde este. Se repite aqui para que un
-# keystore copiado por error a otra carpeta tampoco se cuele.
+# Firma: nunca al repositorio, este donde este.
 keystore.properties
 *.jks
 *.keystore

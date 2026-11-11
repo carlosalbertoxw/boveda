@@ -1,4 +1,5 @@
-# Configuracion de detekt para Boveda.
+# Configuracion de detekt para Boveda: la misma para boveda-android,
+# boveda-desktop y boveda-nucleo.
 #
 # Parte de la configuracion por omision (buildUponDefaultConfig) y solo ajusta
 # lo que choca con como esta escrito este proyecto. El criterio para apagar una
@@ -11,10 +12,11 @@ style:
   # parametros de cripto que ya viven en constantes con nombre.
   MagicNumber:
     active: false
-  # El proyecto usa comillas dobles con interpolacion a lo largo de toda la
-  # interfaz; no aporta nada perseguirlo.
+  # 120, el margen por omision de IntelliJ y Android Studio: es al que se
+  # escribio la app de escritorio, y la de Android, escrita a 100, cabe de
+  # sobra. Lo que se busca es que nadie tenga que desplazarse en el editor.
   MaxLineLength:
-    maxLineLength: 100
+    maxLineLength: 120
     excludes: ['**/test/**', '**/androidTest/**']
   # Devolver temprano es el estilo de este proyecto y se lee mejor que anidar:
   # Respaldo.lee, por ejemplo, valida el archivo campo a campo y sale con el
@@ -24,8 +26,9 @@ style:
 
 complexity:
   # Las pantallas de Compose son largas por naturaleza: describen un arbol.
+  # Main.kt de escritorio es lo mismo: arma la ventana entera.
   LongMethod:
-    excludes: ['**/ui/**', '**/test/**', '**/androidTest/**']
+    excludes: ['**/ui/**', '**/Main.kt', '**/test/**', '**/androidTest/**']
   LongParameterList:
     excludes: ['**/ui/**']
     # Biometria.pide toma seis: la actividad, el cifrador, los dos textos del
@@ -36,8 +39,10 @@ complexity:
   # entera —dos tablas, sus listados, sus transacciones y los ladrillos
   # privados de las que las tocan juntas—. Partirlo en dos DAO repartiria las
   # transacciones entre ellos, que es exactamente lo que no puede pasar.
+  # Textos.kt es el strings.xml de escritorio: una funcion por texto con
+  # parametros, todas en el mismo objeto a proposito.
   TooManyFunctions:
-    excludes: ['**/test/**', '**/androidTest/**']
+    excludes: ['**/test/**', '**/androidTest/**', '**/Textos.kt']
     thresholdInClasses: 35
     thresholdInFiles: 35
     thresholdInObjects: 20

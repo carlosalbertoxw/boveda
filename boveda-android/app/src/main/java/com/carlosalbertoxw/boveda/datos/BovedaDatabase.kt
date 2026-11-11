@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 @Database(
-    entities = [Credencial::class, HistorialContrasena::class],
+    entities = [CredencialFila::class, HistorialFila::class],
     version = 2,
     exportSchema = true
 )

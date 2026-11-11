@@ -10,6 +10,11 @@ import kotlinx.coroutines.flow.Flow
 /**
  * El acceso a la boveda.
  *
+ * Las consultas devuelven los modelos del nucleo, [Credencial] e
+ * [HistorialContrasena]: Room los construye con las columnas del mismo nombre.
+ * Solo insertar y actualizar necesitan las entidades de Room ([CredencialFila],
+ * [HistorialFila]), y eso queda escondido en la plomeria de abajo.
+ *
  * Es una clase abstracta y no una interfaz porque varias operaciones tienen que
  * tocar dos tablas de una sola pieza —mandar a la papelera, mover la marca del
  * historial, borrar de verdad— y `@Transaction` con cuerpo se apoya en eso.
@@ -77,7 +82,7 @@ abstract class CredencialDao {
      */
     @Transaction
     open suspend fun inserta(credencial: Credencial): Long {
-        val id = insertaFila(credencial)
+        val id = insertaFila(credencial.aFila())
         insertaEnHistorial(
             HistorialContrasena(
                 credencialId = id,
@@ -96,7 +101,7 @@ abstract class CredencialDao {
     @Transaction
     open suspend fun actualiza(credencial: Credencial) {
         val anterior = filaPorId(credencial.id)
-        actualizaFila(credencial)
+        actualizaFila(credencial.aFila())
         if (anterior != null && anterior.contrasena == credencial.contrasena) return
         desmarcaHistorial(credencial.id)
         insertaEnHistorial(
@@ -124,7 +129,7 @@ abstract class CredencialDao {
         historial: List<HistorialContrasena>
     ): Long {
         if (historial.isEmpty()) return inserta(credencial)
-        val id = insertaFila(credencial)
+        val id = insertaFila(credencial.aFila())
         insertaEnHistorial(historial.map { it.copy(id = 0, credencialId = id) })
         return id
     }
@@ -132,7 +137,7 @@ abstract class CredencialDao {
     /**
      * Sustituye una entrada que ya existe y su historial entero, de una pieza.
      * Es el camino de la importacion cuando el archivo trae la misma cuenta
-     * con datos distintos ([GestorRespaldo.Fusion.combina]): la credencial y la
+     * con datos distintos ([Fusion.combina]): la credencial y la
      * marca de "actual" cambian juntas o no cambian.
      *
      * El historial se reetiqueta con ids nuevos, igual que en
@@ -144,7 +149,7 @@ abstract class CredencialDao {
         historial: List<HistorialContrasena>
     ) {
         if (filaPorId(credencial.id) == null) return
-        actualizaFila(credencial)
+        actualizaFila(credencial.aFila())
         borraHistorialDe(credencial.id)
         insertaEnHistorial(historial.map { it.copy(id = 0, credencialId = credencial.id) })
     }
@@ -159,7 +164,8 @@ abstract class CredencialDao {
     @Transaction
     open suspend fun usaDelHistorial(entrada: HistorialContrasena, ahora: Long) {
         val credencial = filaPorId(entrada.credencialId) ?: return
-        actualizaFila(credencial.copy(contrasena = entrada.contrasena, actualizadoEn = ahora))
+        val nueva = credencial.copy(contrasena = entrada.contrasena, actualizadoEn = ahora)
+        actualizaFila(nueva.aFila())
         desmarcaHistorial(entrada.credencialId)
         marcaComoActual(entrada.id)
     }
@@ -216,11 +222,11 @@ abstract class CredencialDao {
     @Query("DELETE FROM historial_contrasenas WHERE id = :id AND actual = 0")
     abstract suspend fun borraDelHistorial(id: Long): Int
 
-    @Insert
-    abstract suspend fun insertaEnHistorial(entrada: HistorialContrasena)
+    open suspend fun insertaEnHistorial(entrada: HistorialContrasena) =
+        insertaFilaHistorial(entrada.aFila())
 
-    @Insert
-    abstract suspend fun insertaEnHistorial(entradas: List<HistorialContrasena>)
+    open suspend fun insertaEnHistorial(entradas: List<HistorialContrasena>) =
+        insertaFilasHistorial(entradas.map { it.aFila() })
 
     // --- Borrado total ----------------------------------------------------
 
@@ -237,10 +243,16 @@ abstract class CredencialDao {
     // descuadradas si se usan por su cuenta.
 
     @Insert
-    protected abstract suspend fun insertaFila(credencial: Credencial): Long
+    protected abstract suspend fun insertaFila(fila: CredencialFila): Long
 
     @Update
-    protected abstract suspend fun actualizaFila(credencial: Credencial)
+    protected abstract suspend fun actualizaFila(fila: CredencialFila)
+
+    @Insert
+    protected abstract suspend fun insertaFilaHistorial(fila: HistorialFila)
+
+    @Insert
+    protected abstract suspend fun insertaFilasHistorial(filas: List<HistorialFila>)
 
     @Query("SELECT * FROM credenciales WHERE id = :id")
     protected abstract suspend fun filaPorId(id: Long): Credencial?

@@ -10,13 +10,13 @@ import org.junit.Test
 /**
  * Lo que hace que un respaldo del telefono se abra en la computadora, y al reves.
  *
- * Las otras pruebas del respaldo escriben y leen con el mismo codigo, asi que
- * pasarian igual aunque el formato se hubiera desviado del de Android en las
- * dos direcciones a la vez. Estas no: comparan contra valores calculados fuera
- * de la JVM, con Node.js, a partir de la especificacion del formato
- * (`herramientas/respaldo-referencia.mjs`).
+ * Las dos apps comparten el codigo del respaldo, y las otras pruebas escriben
+ * y leen con ese mismo codigo: pasarian igual aunque el formato se hubiera
+ * desviado de su especificacion. Estas no: comparan contra valores calculados
+ * fuera de la JVM, con Node.js, a partir de la especificacion del formato
+ * (`boveda-nucleo/herramientas/respaldo-referencia.mjs`).
  */
-class CompatibilidadAndroidTest {
+class CompatibilidadFormatoTest {
 
     @Test
     fun `la derivacion coincide byte a byte con una implementacion independiente`() {

@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Cuanto dura lo borrado antes de dejar de existir.
  *
- * Va aparte y sin tocar la base, igual que [GestorRespaldo.Fusion]: es la unica
+ * Va aparte y sin tocar la base, igual que [Fusion]: es la unica
  * regla de la papelera con criterio propio —cuando algo ya cumplio su plazo— y
  * asi se prueba sola, sin levantar SQLCipher ni esperar treinta dias.
  *
