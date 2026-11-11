@@ -31,17 +31,24 @@ object ArchivoSeguro {
     fun escribe(destino: Path, bytes: ByteArray, privado: Boolean = true) {
         val temporal = destino.resolveSibling("${destino.fileName}.tmp")
         try {
-            FileChannel.open(
-                temporal,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING,
-                StandardOpenOption.WRITE
-            ).use { canal ->
-                val buffer = ByteBuffer.wrap(bytes)
-                while (buffer.hasRemaining()) canal.write(buffer)
-                canal.force(true)
+            // Si quedo un temporal de un intento anterior, se borra: al crearlo
+            // de nuevo nace ya con los permisos privados, en vez de heredar
+            // los que tuviera.
+            Files.deleteIfExists(temporal)
+            val opciones = setOf(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+            // En macOS y Linux el temporal nace ya con permisos 600. Crearlo con
+            // los de por omision (644 con la umask habitual) y restringirlo
+            // despues dejaria un instante en que otros usuarios podrian abrirlo.
+            val canal = if (privado && posix) {
+                FileChannel.open(temporal, opciones, SOLO_DUENO)
+            } else {
+                FileChannel.open(temporal, opciones)
             }
-            if (privado) restringe(temporal)
+            canal.use {
+                val buffer = ByteBuffer.wrap(bytes)
+                while (buffer.hasRemaining()) it.write(buffer)
+                it.force(true)
+            }
             try {
                 Files.move(
                     temporal,
@@ -54,6 +61,7 @@ object ArchivoSeguro {
                 // atomica. Se pierde la garantia, pero no la escritura.
                 Files.move(temporal, destino, StandardCopyOption.REPLACE_EXISTING)
             }
+            sincronizaDirectorio(destino.parent)
         } catch (e: IOException) {
             runCatching { Files.deleteIfExists(temporal) }
             throw e
@@ -65,6 +73,19 @@ object ArchivoSeguro {
      * de la app vive dentro del perfil del usuario, cuyos permisos ya excluyen
      * a los demas usuarios del equipo.
      */
+    private val SOLO_DUENO = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"))
+
+    /**
+     * El renombrado vive en el directorio, no en el archivo: en Linux, sin
+     * forzar tambien el directorio, un corte de luz justo despues puede
+     * devolver el nombre viejo aunque los datos nuevos ya esten en disco.
+     * Windows no deja abrir un directorio asi y alli no hace falta.
+     */
+    private fun sincronizaDirectorio(directorio: Path?) {
+        if (!posix || directorio == null) return
+        runCatching { FileChannel.open(directorio, StandardOpenOption.READ).use { it.force(true) } }
+    }
+
     fun restringe(ruta: Path) {
         if (!posix) return
         val permisos = if (Files.isDirectory(ruta)) "rwx------" else "rw-------"

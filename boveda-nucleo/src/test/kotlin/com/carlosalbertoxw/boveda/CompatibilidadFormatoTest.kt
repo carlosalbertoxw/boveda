@@ -15,6 +15,10 @@ import org.junit.Test
  * desviado de su especificacion. Estas no: comparan contra valores calculados
  * fuera de la JVM, con Node.js, a partir de la especificacion del formato
  * (`boveda-nucleo/herramientas/respaldo-referencia.mjs`).
+ *
+ * El archivo de referencia se escribio con 210 000 iteraciones, la cifra que
+ * usaban las primeras versiones: que se siga abriendo prueba tambien que subir
+ * las iteraciones no dejo atras ningun respaldo existente.
  */
 class CompatibilidadFormatoTest {
 

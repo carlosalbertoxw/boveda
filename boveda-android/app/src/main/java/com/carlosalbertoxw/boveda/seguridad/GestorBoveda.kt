@@ -292,31 +292,53 @@ class GestorBoveda(
      * El castigo se guarda medido con ambos y aqui se toma **el mayor de los
      * dos restantes**: para volver a intentar hay que haber esperado tanto en
      * el reloj monotonico como en el de pared. Adelantar la fecha del telefono
-     * no sirve, porque el monotonico sigue corriendo; y el monotonico por si
-     * solo tampoco basta, porque se reinicia al apagar el equipo.
+     * no sirve, porque el monotonico sigue corriendo; y atrasarla tampoco
+     * alarga nada, porque ningun vencimiento puede pedir mas que el castigo mas
+     * largo ([CASTIGO_MAXIMO]): si el de pared pide mas, ese reloj se movio por
+     * debajo y no cuenta.
      *
-     * La clave esta en [restante]: ningun vencimiento puede pedir mas de lo que
-     * dura el castigo mas largo, porque nunca se anota uno mayor. Si al leerlo
-     * pide mas, es que ese reloj se movio por debajo —el telefono se reinicio,
-     * o alguien cambio la fecha— y su cuenta ya no significa nada, asi que se
-     * descarta y manda el otro, que si es coherente.
+     * **Reiniciar vuelve a empezar el castigo.** El monotonico se reinicia al
+     * apagar el telefono, y se nota porque de pronto pide mas de lo posible.
+     * Tras un reinicio solo queda el reloj de pared, y ese se puede adelantar a
+     * mano: no hay forma de distinguir el tiempo que de verdad paso de un
+     * cambio de fecha. Por eso el castigo se vuelve a armar completo desde ese
+     * momento, medido con el monotonico nuevo. Lo paga quien reinicia a mitad
+     * de una espera —como mucho [CASTIGO_MAXIMO] segundos— y a cambio reiniciar
+     * y tocar la fecha deja de ser una forma de saltarse el freno.
      *
-     * De ahi salen las tres propiedades que se buscan, y que estan probadas en
-     * CandadoTest: reiniciar el telefono no alarga la espera (manda el reloj de
-     * pared, que sobrevive al apagon), adelantar la fecha no la saltea (manda
-     * el monotonico, que no se deja mover), y en ningun caso se puede pedir mas
-     * de [CASTIGO_MAXIMO] segundos.
+     * Una espera ya cumplida se borra en cuanto se ve vencida, para que un
+     * reinicio posterior no la confunda con una pendiente.
+     *
+     * Las propiedades estan probadas en CandadoTest.
      */
-    fun segundosDeEspera(): Int = maxOf(
-        restante(prefs.esperaMonotonicaHasta - reloj.monotonico()),
-        restante(prefs.esperaParedHasta - reloj.pared())
-    )
+    fun segundosDeEspera(): Int {
+        val hastaMonotonico = prefs.esperaMonotonicaHasta
+        val hastaPared = prefs.esperaParedHasta
+        if (hastaMonotonico == 0L && hastaPared == 0L) return 0
+
+        val faltaMonotonico = hastaMonotonico - reloj.monotonico()
+        if (faltaMonotonico > CASTIGO_MAXIMO * 1000L) {
+            val castigo = castigo(prefs.fallosSeguidos)
+            if (castigo > 0) armaEspera(castigo) else prefs.limpiaEspera()
+            return castigo
+        }
+
+        val espera = maxOf(restante(faltaMonotonico), restante(hastaPared - reloj.pared()))
+        if (espera == 0) prefs.limpiaEspera()
+        return espera
+    }
 
     private fun restante(milisegundos: Long): Int = when {
         milisegundos <= 0L -> 0
         // Mas que el castigo mas largo posible: este reloj miente, no cuenta.
         milisegundos > CASTIGO_MAXIMO * 1000L -> 0
         else -> ((milisegundos + 999) / 1000).toInt()
+    }
+
+    private fun armaEspera(segundos: Int) {
+        val milisegundos = segundos * 1000L
+        prefs.esperaMonotonicaHasta = reloj.monotonico() + milisegundos
+        prefs.esperaParedHasta = reloj.pared() + milisegundos
     }
 
     private fun registraFallo(): Apertura {
@@ -330,17 +352,13 @@ class GestorBoveda(
         }
 
         val castigo = castigo(fallos)
-        if (castigo > 0) {
-            val milisegundos = castigo * 1000L
-            prefs.esperaMonotonicaHasta = reloj.monotonico() + milisegundos
-            prefs.esperaParedHasta = reloj.pared() + milisegundos
-        }
+        if (castigo > 0) armaEspera(castigo)
         return Apertura.Incorrecta(fallos, castigo)
     }
 
     /**
      * Los primeros tres intentos salen gratis —uno se equivoca al teclear— y a
-     * partir de ahi la espera se duplica hasta cinco minutos. Con 210 000
+     * partir de ahi la espera se duplica hasta cinco minutos. Con 600 000
      * iteraciones de PBKDF2 por intento, probar un diccionario a mano deja de
      * ser viable mucho antes de eso.
      */

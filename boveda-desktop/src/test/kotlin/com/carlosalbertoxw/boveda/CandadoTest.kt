@@ -54,7 +54,7 @@ class CandadoTest {
     private val maestra = "correcto caballo bateria"
 
     // Pocas iteraciones: aqui se prueba la logica del candado, no el coste de
-    // PBKDF2, y con 210 000 cada intento fallido tardaria lo suyo.
+    // PBKDF2, y con 600 000 cada intento fallido tardaria lo suyo.
     private val iteraciones = 1_000
 
     @Before
@@ -184,12 +184,56 @@ class CandadoTest {
     }
 
     @Test
-    fun `tras reiniciar manda el reloj de pared, que si sobrevive al apagon`() = runTest {
+    fun `reiniciar a mitad de la espera la vuelve a empezar`() = runTest {
+        reloj.monotonico = 3L * 24 * 60 * 60 * 1000
+        repeat(4) { fallaUnaVez() }
+
+        // Tras un reinicio no se puede saber cuanto tiempo paso de verdad: el
+        // reloj de pared se puede haber adelantado a mano. El castigo vuelve a
+        // empezar entero, medido con el monotonico nuevo.
+        reloj.reinicia(apagadoMilisegundos = 60_000)
+
+        assertEquals(15, gestor.segundosDeEspera())
+        assertTrue(gestor.abreConMaestra(maestra.toCharArray()) is Apertura.EnEspera)
+
+        reloj.avanza(15_000)
+        assertEquals(0, gestor.segundosDeEspera())
+    }
+
+    @Test
+    fun `reiniciar y adelantar la fecha del equipo no saltea la espera`() = runTest {
         reloj.monotonico = 3L * 24 * 60 * 60 * 1000
         repeat(4) { fallaUnaVez() }
 
         reloj.reinicia(apagadoMilisegundos = 60_000)
+        reloj.pared += 24L * 60 * 60 * 1000
 
+        assertTrue(gestor.segundosDeEspera() > 0)
+        assertTrue(gestor.abreConMaestra(maestra.toCharArray()) is Apertura.EnEspera)
+    }
+
+    @Test
+    fun `reiniciar y atrasar la fecha del equipo no saltea la espera`() = runTest {
+        reloj.monotonico = 3L * 24 * 60 * 60 * 1000
+        repeat(4) { fallaUnaVez() }
+
+        reloj.reinicia(apagadoMilisegundos = 60_000)
+        reloj.pared -= 30L * 24 * 60 * 60 * 1000
+
+        assertTrue(gestor.segundosDeEspera() > 0)
+        assertTrue(gestor.abreConMaestra(maestra.toCharArray()) is Apertura.EnEspera)
+    }
+
+    @Test
+    fun `una espera ya cumplida no revive al reiniciar`() = runTest {
+        reloj.monotonico = 3L * 24 * 60 * 60 * 1000
+        repeat(4) { fallaUnaVez() }
+
+        reloj.avanza(16_000)
+        // La app la ve vencida, como cuando la pantalla de desbloqueo cuenta.
+        assertEquals(0, gestor.segundosDeEspera())
+
+        reloj.reinicia(apagadoMilisegundos = 60_000)
         assertEquals(0, gestor.segundosDeEspera())
     }
 

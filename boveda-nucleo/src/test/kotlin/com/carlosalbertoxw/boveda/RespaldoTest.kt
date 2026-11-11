@@ -165,7 +165,7 @@ class RespaldoTest {
     @Test
     fun `bajar las iteraciones de la cabecera invalida el archivo`() {
         val original = String(Respaldo.escribe(muestra, clave()), Charsets.UTF_8)
-        val manipulado = original.replace("\"iteraciones\": 210000", "\"iteraciones\": 1")
+        val manipulado = original.replace("\"iteraciones\": ${Kdf.ITERACIONES}", "\"iteraciones\": 1")
 
         // Comprueba que la sustitucion de verdad ocurrio, no que el test pase
         // por no haber cambiado nada.
@@ -176,6 +176,21 @@ class RespaldoTest {
         // La cabecera va autenticada como AAD: sin esto, un atacante abarataria
         // su ataque por diccionario a coste cero.
         assertTrue(leido is Respaldo.Lectura.ContrasenaIncorrecta)
+    }
+
+    @Test
+    fun `un archivo que pide iteraciones desmedidas se rechaza sin derivar nada`() {
+        val original = String(Respaldo.escribe(muestra, clave()), Charsets.UTF_8)
+        val manipulado = original.replace(
+            "\"iteraciones\": ${Kdf.ITERACIONES}",
+            "\"iteraciones\": 2000000000"
+        )
+        assertFalse(original == manipulado)
+
+        // Si se derivara, esta prueba tardaria horas: que termine al instante
+        // es parte de lo que comprueba.
+        val leido = Respaldo.lee(manipulado.toByteArray(Charsets.UTF_8), clave())
+        assertTrue(leido is Respaldo.Lectura.Corrupto)
     }
 
     @Test

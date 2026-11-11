@@ -20,7 +20,7 @@ import java.util.Base64
  *   "version": 2,
  *   "creado": "2026-08-15T18:00:00Z",
  *   "entradas": 12,
- *   "kdf": { "algoritmo": "PBKDF2WithHmacSHA256", "iteraciones": 210000, "sal": "..." },
+ *   "kdf": { "algoritmo": "PBKDF2WithHmacSHA256", "iteraciones": 600000, "sal": "..." },
  *   "cifrado": "AES-256-GCM",
  *   "datos": "base64( iv || texto cifrado || etiqueta )"
  * }
@@ -170,7 +170,7 @@ object Respaldo {
         val kdf = sobre.optJSONObject("kdf") ?: return Lectura.Corrupto("falta el bloque kdf")
         val salB64 = kdf.optString("sal").ifEmpty { return Lectura.Corrupto("falta la sal") }
         val iteraciones = kdf.optInt("iteraciones", 0)
-        if (iteraciones <= 0) return Lectura.Corrupto("iteraciones invalidas")
+        if (iteraciones !in 1..Kdf.MAXIMO_ITERACIONES) return Lectura.Corrupto("iteraciones invalidas")
 
         val sal = try {
             Base64.getDecoder().decode(salB64)

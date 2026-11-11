@@ -21,7 +21,7 @@ import java.nio.file.Files
  *
  * En Android esta suite era instrumentada porque SQLCipher es codigo nativo.
  * Aqui la base es JVM pura, asi que el ciclo entero corre con las pruebas
- * normales y con las 210 000 iteraciones reales.
+ * normales y con las 600 000 iteraciones reales.
  */
 class FlujoBovedaTest {
 

@@ -6,7 +6,9 @@
 //
 //   node herramientas/respaldo-referencia.mjs > src/test/resources/respaldo-referencia-v2.json
 //
-// Se lanza desde boveda-nucleo/.
+// Se lanza desde boveda-nucleo/. Las 210 000 iteraciones son las de las primeras
+// versiones de la app y se dejan asi a proposito: el archivo hace de respaldo
+// "viejo" que las versiones nuevas tienen que seguir abriendo.
 import crypto from "node:crypto";
 
 const contrasena = "contraseña del respaldo 🔐";
