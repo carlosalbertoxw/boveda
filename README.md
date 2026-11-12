@@ -67,8 +67,9 @@ y la app de Android repite la lectura con el org.json de Android (`RespaldoAndro
 
 ## Construir
 
-Hace falta un **JDK 17 o posterior** (probado con 21 y 26). No hay que fijarlo a mano: Gradle 9
-corre sobre cualquiera de esas versiones.
+Gradle corre sobre un **JDK 21** —lo fija `gradle/gradle-daemon-jvm.properties` de cada app,
+porque detekt 1.23 no arranca sobre los JDK más nuevos (falla con el 26)— y lo busca solo entre los JDK instalados: sirve
+el JBR 21 que trae Android Studio. El `java` del sistema puede ser otro, y no hace falta `JAVA_HOME`.
 
 ```bash
 cd boveda-android && ./gradlew :app:assembleDebug

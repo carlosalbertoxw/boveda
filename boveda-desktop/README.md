@@ -16,7 +16,9 @@ al revés.
 Los comandos se lanzan desde esta carpeta (`boveda-desktop/`), que es una build de Gradle
 independiente de la de Android.
 
-Requiere un **JDK 17 o posterior** (probado con 21 y 26).
+Gradle corre sobre un **JDK 21**, que busca solo entre los instalados (sirve el JBR 21 de Android
+Studio; ver [gradle-daemon-jvm.properties](gradle/gradle-daemon-jvm.properties)). El instalador lleva
+su propio runtime, así que quien instala la app no necesita Java.
 
 ```bash
 ./gradlew run

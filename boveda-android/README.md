@@ -17,7 +17,8 @@ Los comandos se lanzan desde esta carpeta (`boveda-android/`), que es una build 
 independiente de la de escritorio; en Android Studio se abre esta carpeta, no la raíz del
 repositorio.
 
-Requiere un **JDK 17 o posterior**; sirve el que trae Android Studio. Desde la terminal:
+Gradle corre sobre un **JDK 21**, que busca solo entre los instalados (sirve el JBR 21 de Android
+Studio; ver [gradle-daemon-jvm.properties](gradle/gradle-daemon-jvm.properties)). Desde la terminal:
 
 ```bash
 ./gradlew :app:assembleDebug
