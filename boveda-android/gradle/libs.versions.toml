@@ -3,7 +3,7 @@ agp = "9.5.1"
 # La misma version de Kotlin que boveda-desktop y boveda-nucleo: el nucleo se
 # compila dentro de esta build y conviene que todo salga del mismo compilador.
 kotlin = "2.4.21"
-ksp = "2.3.13"
+ksp = "2.3.14"
 coreKtx = "1.19.1"
 lifecycle = "2.11.0"
 activityCompose = "1.13.0"
